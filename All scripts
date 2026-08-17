@@ -454,3 +454,123 @@ targetCatButton.MouseButton1Click:Connect(function()
     
     fireRemoteEvent(target)
 end)
+
+
+
+سكربت السرعة 👇👇👇👇👇👇👇👇👇👇👇👇👇👇
+-- =====================================================================
+-- CFrame Safe Speed Bypass - Safe Distance (25) + Ghazwan Welcome UI
+-- =====================================================================
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+local player = Players.LocalPlayer
+
+local function createWelcomeGUI()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "GhazwanWelcomeUI"
+    screenGui.ResetOnSpawn = false
+    
+    local success = pcall(function()
+        screenGui.Parent = CoreGui
+    end)
+    if not success then
+        screenGui.Parent = player:WaitForChild("PlayerGui")
+    end
+
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Size = UDim2.new(0, 350, 0, 70) 
+    mainFrame.Position = UDim2.new(0.5, 0, 0.15, 0) 
+    mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Parent = screenGui
+
+    local uiCorner = Instance.new("UICorner")
+    uiCorner.CornerRadius = UDim.new(0, 8)
+    uiCorner.Parent = mainFrame
+
+    local uiStroke = Instance.new("UIStroke")
+    uiStroke.Thickness = 3
+    uiStroke.Color = Color3.fromRGB(255, 255, 255)
+    uiStroke.Parent = mainFrame
+
+    local gradient = Instance.new("UIGradient")
+    gradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
+    }
+    gradient.Parent = uiStroke
+
+    RunService.RenderStepped:Connect(function()
+        gradient.Rotation = (gradient.Rotation + 3) % 360
+    end)
+
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, -10, 1, -10)
+    textLabel.Position = UDim2.new(0.5, 0, 0.5, 0)
+    textLabel.AnchorPoint = Vector2.new(0.5, 0.5)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = "Welcome, Please do not use secondary scripts\nIf you have any questions, please feel free to ask the editor.\nTikTok: jazwan27"
+    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.TextSize = 12
+    textLabel.TextWrapped = true
+    textLabel.Parent = mainFrame
+    
+    task.delay(10, function()
+        if screenGui then
+            screenGui:Destroy()
+        end
+    end)
+end
+
+createWelcomeGUI()
+
+local EXTRA_SPEED = 15 
+local SAFE_DISTANCE = 25 
+
+local ladderParts = {}
+
+local function cacheLadders()
+    local map = workspace:WaitForChild("Map", 5)
+    if not map then return end
+    
+    for _, obj in pairs(map:GetDescendants()) do
+        if obj:IsA("BasePart") and obj.Name == "Smooth Block Model" then
+            table.insert(ladderParts, obj)
+        end
+    end
+end
+
+cacheLadders()
+
+local function isNearLadder(rootPart)
+    if #ladderParts == 0 then return false end
+    
+    for _, part in ipairs(ladderParts) do
+        local dist = (part.Position - rootPart.Position).Magnitude
+        if dist <= SAFE_DISTANCE then
+            return true 
+        end
+    end
+    return false
+end
+
+RunService.Heartbeat:Connect(function(deltaTime)
+    local character = player.Character
+    if not character then return end
+    
+    local humanoid = character:FindFirstChild("Humanoid")
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    
+    if humanoid and rootPart and humanoid.Health > 0 then
+        if humanoid.MoveDirection.Magnitude > 0 then
+            if not isNearLadder(rootPart) then
+                local speedOffset = humanoid.MoveDirection * (EXTRA_SPEED * deltaTime)
+                rootPart.CFrame = rootPart.CFrame + speedOffset
+            end
+        end
+    end
+end)
