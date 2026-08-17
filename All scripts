@@ -144,3 +144,313 @@ local function goToRedTowerSmooth()
 end
 
 goToRedTowerSmooth()
+
+سكربت الايم بوت 👇👇👇👇👇👇👇👇👇👇👇👇
+local player = game.Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RemoteEvent = ReplicatedStorage.Events.Remote.ShotTarget
+local SoundService = game:GetService("SoundService")
+local workspace = game:GetService("Workspace")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+
+local targetTeamName = "Red"  
+local cooldown = 0  
+local bulletSpeed = 49.5  
+local minPredictionDistance = 0  
+local maxPredictionDistance = 10  
+local lastShotTime = 0  
+
+local function getTargetTeam()
+    if player.Team then
+        if player.Team.Name == "Red" then
+            return "Blue"
+        elseif player.Team.Name == "Blue" then
+            return "Red"
+        end
+    end
+    return targetTeamName
+end
+
+local function animateNotification(notification)
+    local endPos = UDim2.new(0.5, -100, 0.4, -50) 
+    
+    local tweenInfo = TweenInfo.new(
+        1, 
+        Enum.EasingStyle.Elastic, 
+        Enum.EasingDirection.Out, 
+        0, 
+        false, 
+        0 
+    )
+    
+    local tween = game:GetService("TweenService"):Create(notification, tweenInfo, {Position = endPos})
+    
+    tween:Play()
+    
+    wait(2) 
+    
+    tween:Destroy()
+end
+
+local function displayNotification(message)
+    local notification = Instance.new("ScreenGui")
+    notification.Name = "Notification"
+    
+    local success, parent = pcall(function() return gethui() end)
+    notification.Parent = success and parent or game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Parent = notification
+    textLabel.Size = UDim2.new(0, 200, 0, 50)
+    textLabel.Position = UDim2.new(0.5, -100, 0.55, -50)
+    textLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    textLabel.Text = message
+    textLabel.TextSize = 20
+    textLabel.Font = Enum.Font.SourceSans
+    textLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
+
+    animateNotification(textLabel)
+
+    wait(2)
+    for transparency = 0, 1, 0.1 do
+        textLabel.BackgroundTransparency = transparency
+        wait(0.1)
+    end
+    notification:Destroy()
+end
+
+local function findClosestPlayer()
+    local players = game.Players:GetPlayers()
+    local closestPlayer = nil
+    local shortestDistance = math.huge
+    
+    local tool = player.Character:FindFirstChildOfClass("Tool")
+    local head = player.Character:FindFirstChild("Head")
+    
+    if tool and head then
+        local camera = workspace.CurrentCamera
+        local shooterPosition = head.CFrame.Position + (camera.CFrame.LookVector * 1.5)
+        
+        local currentTargetTeam = getTargetTeam()
+        
+        for _, plyr in ipairs(players) do
+            if plyr ~= player and plyr.Team and plyr.Team.Name == currentTargetTeam and plyr.Character and plyr.Character:FindFirstChild("Humanoid") and plyr.Character.Humanoid.Health > 0 then
+                local targetPosition = plyr.Character.HumanoidRootPart.Position
+                
+                local raycastParams = RaycastParams.new()
+                raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+                raycastParams.FilterDescendantsInstances = {player.Character}
+                local rayResult = workspace:Raycast(shooterPosition, targetPosition - shooterPosition, raycastParams)
+                
+                local isVisible = false
+                if rayResult and rayResult.Instance:IsDescendantOf(plyr.Character) then
+                    isVisible = true
+                elseif not rayResult then
+                    isVisible = true
+                end
+                
+                if isVisible then
+                    local horizontalDistance = (Vector3.new(targetPosition.X, 0, targetPosition.Z) - Vector3.new(shooterPosition.X, 0, shooterPosition.Z)).magnitude
+                    local heightDifference = math.abs(targetPosition.Y - shooterPosition.Y)
+                    local totalDistance = (horizontalDistance^2 + heightDifference^2)^0.5
+                    
+                    if totalDistance < shortestDistance then
+                        closestPlayer = plyr
+                        shortestDistance = totalDistance
+                    end
+                end
+            end
+        end
+    else
+        if not tool then
+            print("No tool equipped.")
+        end
+    end
+    
+    return closestPlayer, shortestDistance
+end
+
+local function predictPosition(targetPosition, targetVelocity)
+    local head = player.Character:FindFirstChild("Head")
+    local camera = workspace.CurrentCamera
+    
+    local shooterPosition = head and (head.CFrame.Position + (camera.CFrame.LookVector * 1.5)) or player.Character.HumanoidRootPart.Position
+    local distanceToTarget = (targetPosition - shooterPosition).magnitude
+    
+    local predictionDistance = math.clamp(distanceToTarget, minPredictionDistance, maxPredictionDistance)
+    local timeToImpact = predictionDistance / bulletSpeed
+    
+    return targetPosition + targetVelocity * timeToImpact
+end
+
+local function fireRemoteEvent(targetPlayer)
+    if targetPlayer then
+        local currentTime = os.time()
+        if currentTime - lastShotTime >= cooldown then
+            local targetPosition = targetPlayer.Character.HumanoidRootPart.Position
+            local targetVelocity = targetPlayer.Character.HumanoidRootPart.Velocity
+            
+            local predictedPosition = predictPosition(targetPosition, targetVelocity)
+            
+            local args = {
+                [1] = predictedPosition,
+                [2] = "Sniper"
+            }
+            RemoteEvent:FireServer(unpack(args))
+            
+            local tool = player.Character:FindFirstChildOfClass("Tool")
+            if tool then
+                tool:Activate()
+            end
+            
+            lastShotTime = currentTime
+        end
+    else
+        print("No valid players found on the specified team nearby.")
+    end
+end
+
+local gui = Instance.new("ScreenGui")
+local success, parent = pcall(function() return gethui() end)
+gui.Parent = success and parent or game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+local function createWelcomeGUI()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "GhazwanWelcomeUI"
+    screenGui.ResetOnSpawn = false
+    
+    local successCore = pcall(function()
+        screenGui.Parent = CoreGui
+    end)
+    if not successCore then
+        screenGui.Parent = player:WaitForChild("PlayerGui")
+    end
+
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Size = UDim2.new(0, 350, 0, 70) 
+    mainFrame.Position = UDim2.new(0.5, 0, 0.15, 0) 
+    mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Parent = screenGui
+
+    local uiCorner = Instance.new("UICorner")
+    uiCorner.CornerRadius = UDim.new(0, 8)
+    uiCorner.Parent = mainFrame
+
+    local uiStroke = Instance.new("UIStroke")
+    uiStroke.Thickness = 3
+    uiStroke.Color = Color3.fromRGB(255, 255, 255)
+    uiStroke.Parent = mainFrame
+
+    local gradient = Instance.new("UIGradient")
+    gradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
+    }
+    gradient.Parent = uiStroke
+
+    RunService.RenderStepped:Connect(function()
+        gradient.Rotation = (gradient.Rotation + 3) % 360
+    end)
+
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, -10, 1, -10)
+    textLabel.Position = UDim2.new(0.5, 0, 0.5, 0)
+    textLabel.AnchorPoint = Vector2.new(0.5, 0.5)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = "Welcome, Please do not use secondary scripts\nIf you have any questions, please feel free to ask the editor.\nTikTok: jazwan27"
+    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.TextSize = 12
+    textLabel.TextWrapped = true
+    textLabel.Parent = mainFrame
+    
+    task.delay(10, function()
+        if screenGui then
+            screenGui:Destroy()
+        end
+    end)
+end
+
+createWelcomeGUI()
+
+local targetCatButton = Instance.new("ImageButton")
+targetCatButton.Parent = gui
+targetCatButton.Position = UDim2.new(1, -100, 0.5, -37) 
+targetCatButton.Size = UDim2.new(0, 75, 0, 75) 
+targetCatButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+targetCatButton.Image = "rbxassetid://79800588917778" 
+targetCatButton.Active = true 
+
+local uiCorner = Instance.new("UICorner")
+uiCorner.CornerRadius = UDim.new(1, 0)
+uiCorner.Parent = targetCatButton
+
+local CatStroke = Instance.new("UIStroke")
+CatStroke.Thickness = 3
+CatStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+CatStroke.Parent = targetCatButton
+
+local catGradient = Instance.new("UIGradient")
+catGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
+}
+catGradient.Parent = CatStroke
+
+RunService.RenderStepped:Connect(function()
+    catGradient.Rotation = (catGradient.Rotation + 3) % 360
+end)
+
+local dragging
+local dragInput
+local dragStart
+local startPos
+
+targetCatButton.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = targetCatButton.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+targetCatButton.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        targetCatButton.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+local isDragging = false
+targetCatButton.MouseButton1Click:Connect(function()
+    local target = findClosestPlayer()
+    
+    if not target then
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "System",
+            Text = "No enemies found nearby!",
+            Icon = "rbxassetid://79800588917778",
+            Duration = 3
+        })
+    end
+    
+    fireRemoteEvent(target)
+end)
