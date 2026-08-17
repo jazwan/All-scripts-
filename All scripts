@@ -1,0 +1,142 @@
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+
+local player = Players.LocalPlayer
+
+---------------------------------------------------------
+-- 🎨 قسم الواجهة (الشعار والنص الترحيبي)
+---------------------------------------------------------
+local function createWelcomeGUI()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "GhazwanWelcomeUI"
+    screenGui.ResetOnSpawn = false
+    
+    local success = pcall(function()
+        screenGui.Parent = CoreGui
+    end)
+    if not success then
+        screenGui.Parent = player:WaitForChild("PlayerGui")
+    end
+
+    -- الإطار الرئيسي (تم تصغير الحجم)
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Size = UDim2.new(0, 350, 0, 70) -- الحجم الجديد الأصغر
+    mainFrame.Position = UDim2.new(0.5, 0, 0.15, 0) -- الموقع الجديد (أعلى الشاشة)
+    mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Parent = screenGui
+
+    local uiCorner = Instance.new("UICorner")
+    uiCorner.CornerRadius = UDim.new(0, 8)
+    uiCorner.Parent = mainFrame
+
+    local uiStroke = Instance.new("UIStroke")
+    uiStroke.Thickness = 3
+    uiStroke.Color = Color3.fromRGB(255, 255, 255)
+    uiStroke.Parent = mainFrame
+
+    local gradient = Instance.new("UIGradient")
+    gradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
+    }
+    gradient.Parent = uiStroke
+
+    RunService.RenderStepped:Connect(function()
+        gradient.Rotation = (gradient.Rotation + 3) % 360
+    end)
+
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, -10, 1, -10)
+    textLabel.Position = UDim2.new(0.5, 0, 0.5, 0)
+    textLabel.AnchorPoint = Vector2.new(0.5, 0.5)
+    textLabel.BackgroundTransparency = 1
+    -- النص مصمم ليتناسب مع الحجم الجديد
+    textLabel.Text = "Welcome, Please do not use secondary scripts\nIf you have any questions, please feel free to ask the editor.\nTikTok: jazwan27"
+    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.TextSize = 12 -- حجم خط أصغر
+    textLabel.TextWrapped = true
+    textLabel.Parent = mainFrame
+    
+    task.delay(10, function()
+        screenGui:Destroy()
+    end)
+end
+
+createWelcomeGUI()
+
+---------------------------------------------------------
+-- 🚀 قسم سكربت الحركة الخاص بك
+---------------------------------------------------------
+local function getRoot()
+    return player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+end
+
+local function slowFlyTo(targetCFrame, duration)
+    local rootPart = getRoot()
+    if not rootPart then return end
+    
+    local bv = rootPart:FindFirstChild("FlyBV")
+    if not bv then
+        bv = Instance.new("BodyVelocity")
+        bv.Name = "FlyBV"
+        bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+        bv.Velocity = Vector3.new(0, 0, 0)
+        bv.Parent = rootPart
+    end
+    
+    local targetPos = targetCFrame + Vector3.new(0, 3, 0)
+    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
+    local tween = TweenService:Create(rootPart, tweenInfo, {CFrame = targetPos})
+    
+    tween:Play()
+    tween.Completed:Wait()
+end
+
+local function stopFlying()
+    local rootPart = getRoot()
+    if rootPart then
+        local bv = rootPart:FindFirstChild("FlyBV")
+        if bv then bv:Destroy() end
+    end
+end
+
+local function goToRedTowerSmooth()
+    local rootPart = getRoot()
+    if not rootPart then return end
+
+    local blackBlock = workspace:FindFirstChild("SpawnLocation")
+    local redTower = workspace.Map.Red.Tower.Part
+    local redLadder = workspace.Map.Red.Hole.Ladder["Smooth Block Model"]
+
+    local myTeam = player.Team and player.Team.Name or ""
+    
+    if string.match(string.lower(myTeam), "red") then
+        slowFlyTo(redTower.CFrame, 2)
+        stopFlying()
+    else
+        if blackBlock then
+            slowFlyTo(blackBlock.CFrame, 4)
+            task.wait(5)
+        end
+        
+        if redLadder then
+            slowFlyTo(redLadder.CFrame, 6)
+            local climbPos = redLadder.CFrame + Vector3.new(0, 20, 0)
+            slowFlyTo(climbPos, 0.5)
+        end
+        
+        if redTower then
+            slowFlyTo(redTower.CFrame, 5)
+        end
+        
+        stopFlying()
+    end
+end
+
+goToRedTowerSmooth()
