@@ -1,807 +1,1591 @@
-سكربت الذهاب الى برج الاحمر! 
-
-
-
+-- ==========================================
+-- القسم الأول: التهيئة والخدمات وصوت النظام
+-- ==========================================
 local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
-
-local player = Players.LocalPlayer
-
----------------------------------------------------------
--- 🎨 قسم الواجهة (الشعار والنص الترحيبي)
----------------------------------------------------------
-local function createWelcomeGUI()
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "GhazwanWelcomeUI"
-    screenGui.ResetOnSpawn = false
-    
-    local success = pcall(function()
-        screenGui.Parent = CoreGui
-    end)
-    if not success then
-        screenGui.Parent = player:WaitForChild("PlayerGui")
-    end
-
-    -- الإطار الرئيسي (تم تصغير الحجم)
-    local mainFrame = Instance.new("Frame")
-    mainFrame.Size = UDim2.new(0, 350, 0, 70) -- الحجم الجديد الأصغر
-    mainFrame.Position = UDim2.new(0.5, 0, 0.15, 0) -- الموقع الجديد (أعلى الشاشة)
-    mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-    mainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    mainFrame.BorderSizePixel = 0
-    mainFrame.Parent = screenGui
-
-    local uiCorner = Instance.new("UICorner")
-    uiCorner.CornerRadius = UDim.new(0, 8)
-    uiCorner.Parent = mainFrame
-
-    local uiStroke = Instance.new("UIStroke")
-    uiStroke.Thickness = 3
-    uiStroke.Color = Color3.fromRGB(255, 255, 255)
-    uiStroke.Parent = mainFrame
-
-    local gradient = Instance.new("UIGradient")
-    gradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
-    }
-    gradient.Parent = uiStroke
-
-    RunService.RenderStepped:Connect(function()
-        gradient.Rotation = (gradient.Rotation + 3) % 360
-    end)
-
-    local textLabel = Instance.new("TextLabel")
-    textLabel.Size = UDim2.new(1, -10, 1, -10)
-    textLabel.Position = UDim2.new(0.5, 0, 0.5, 0)
-    textLabel.AnchorPoint = Vector2.new(0.5, 0.5)
-    textLabel.BackgroundTransparency = 1
-    -- النص مصمم ليتناسب مع الحجم الجديد
-    textLabel.Text = "Welcome, Please do not use secondary scripts\nIf you have any questions, please feel free to ask the editor.\nTikTok: jazwan27"
-    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    textLabel.Font = Enum.Font.GothamBold
-    textLabel.TextSize = 12 -- حجم خط أصغر
-    textLabel.TextWrapped = true
-    textLabel.Parent = mainFrame
-    
-    task.delay(10, function()
-        screenGui:Destroy()
-    end)
-end
-
-createWelcomeGUI()
-
----------------------------------------------------------
--- 🚀 قسم سكربت الحركة الخاص بك
----------------------------------------------------------
-local function getRoot()
-    return player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-end
-
-local function slowFlyTo(targetCFrame, duration)
-    local rootPart = getRoot()
-    if not rootPart then return end
-    
-    local bv = rootPart:FindFirstChild("FlyBV")
-    if not bv then
-        bv = Instance.new("BodyVelocity")
-        bv.Name = "FlyBV"
-        bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-        bv.Velocity = Vector3.new(0, 0, 0)
-        bv.Parent = rootPart
-    end
-    
-    local targetPos = targetCFrame + Vector3.new(0, 3, 0)
-    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
-    local tween = TweenService:Create(rootPart, tweenInfo, {CFrame = targetPos})
-    
-    tween:Play()
-    tween.Completed:Wait()
-end
-
-local function stopFlying()
-    local rootPart = getRoot()
-    if rootPart then
-        local bv = rootPart:FindFirstChild("FlyBV")
-        if bv then bv:Destroy() end
-    end
-end
-
-local function goToRedTowerSmooth()
-    local rootPart = getRoot()
-    if not rootPart then return end
-
-    local blackBlock = workspace:FindFirstChild("SpawnLocation")
-    local redTower = workspace.Map.Red.Tower.Part
-    local redLadder = workspace.Map.Red.Hole.Ladder["Smooth Block Model"]
-
-    local myTeam = player.Team and player.Team.Name or ""
-    
-    if string.match(string.lower(myTeam), "red") then
-        slowFlyTo(redTower.CFrame, 2)
-        stopFlying()
-    else
-        if blackBlock then
-            slowFlyTo(blackBlock.CFrame, 4)
-            task.wait(5)
-        end
-        
-        if redLadder then
-            slowFlyTo(redLadder.CFrame, 6)
-            local climbPos = redLadder.CFrame + Vector3.new(0, 20, 0)
-            slowFlyTo(climbPos, 0.5)
-        end
-        
-        if redTower then
-            slowFlyTo(redTower.CFrame, 5)
-        end
-        
-        stopFlying()
-    end
-end
-
-goToRedTowerSmooth()
-
-سكربت الايم بوت 👇👇👇👇👇👇👇👇👇👇👇👇
-local player = game.Players.LocalPlayer
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RemoteEvent = ReplicatedStorage.Events.Remote.ShotTarget
-local SoundService = game:GetService("SoundService")
-local workspace = game:GetService("Workspace")
 local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local SoundService = game:GetService("SoundService")
 local RunService = game:GetService("RunService")
-local CoreGui = game:GetService("CoreGui")
+local Workspace = game:GetService("Workspace")
 
-local targetTeamName = "Red"  
-local cooldown = 0  
-local bulletSpeed = 49.5  
-local minPredictionDistance = 0  
-local maxPredictionDistance = 10  
-local lastShotTime = 0  
+local localPlayer = Players.LocalPlayer
 
-local function getTargetTeam()
-    if player.Team then
-        if player.Team.Name == "Red" then
-            return "Blue"
-        elseif player.Team.Name == "Blue" then
-            return "Red"
+if CoreGui:FindFirstChild("VR7MercyScript") then
+    CoreGui.VR7MercyScript:Destroy()
+end
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "VR7MercyScript"
+ScreenGui.Parent = CoreGui
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+local function playSound()
+    local sound = Instance.new("Sound")
+    sound.SoundId = "rbxassetid://18180833536"
+    sound.Volume = 1
+    sound.Parent = SoundService
+    sound:Play()
+    sound.Ended:Connect(function()
+        sound:Destroy()
+    end)
+end
+
+local function safePlaySound()
+    pcall(playSound)
+end
+
+local strokeTweenInfo = TweenInfo.new(0.7, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1, true)
+print("Part 1 Loaded")
+
+-- ==========================================
+-- القسم الثاني: واجهة شريط التحميل (8 ثوانٍ)
+-- ==========================================
+local LoadingGui = Instance.new("Frame")
+LoadingGui.Name = "LoadingGui"
+LoadingGui.Parent = ScreenGui
+LoadingGui.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+LoadingGui.BorderSizePixel = 0
+LoadingGui.AnchorPoint = Vector2.new(0.5, 0.5)
+LoadingGui.Position = UDim2.new(0.5, 0, 0.5, 0)
+LoadingGui.Size = UDim2.new(0, 420, 0, 160)
+LoadingGui.ZIndex = 100
+
+local LoadingCorner = Instance.new("UICorner", LoadingGui)
+LoadingCorner.CornerRadius = UDim.new(0, 8)
+
+local LoadingStroke = Instance.new("UIStroke", LoadingGui)
+LoadingStroke.Thickness = 2
+LoadingStroke.Color = Color3.fromRGB(0, 0, 0)
+LoadingStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+TweenService:Create(LoadingStroke, strokeTweenInfo, {Color = Color3.fromRGB(255, 255, 255)}):Play()
+
+local LoadingMsgLabel = Instance.new("TextLabel", LoadingGui)
+LoadingMsgLabel.BackgroundTransparency = 1
+LoadingMsgLabel.Position = UDim2.new(0, 15, 0, 15)
+LoadingMsgLabel.Size = UDim2.new(1, -30, 0, 45)
+LoadingMsgLabel.Font = Enum.Font.GothamBold
+LoadingMsgLabel.Text = "If you want a key valid for a week, you should visit us on\nTikTok: jazwan27"
+LoadingMsgLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+LoadingMsgLabel.TextSize = 12
+LoadingMsgLabel.TextWrapped = true
+LoadingMsgLabel.TextXAlignment = Enum.TextXAlignment.Center
+LoadingMsgLabel.ZIndex = 101
+
+local LoadingBarBg = Instance.new("Frame", LoadingGui)
+LoadingBarBg.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+LoadingBarBg.BorderSizePixel = 0
+LoadingBarBg.Position = UDim2.new(0, 35, 0, 80)
+LoadingBarBg.Size = UDim2.new(0, 350, 0, 15)
+LoadingBarBg.ZIndex = 101
+Instance.new("UICorner", LoadingBarBg).CornerRadius = UDim.new(1, 0)
+
+local LoadingBarFill = Instance.new("Frame", LoadingBarBg)
+LoadingBarFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+LoadingBarFill.BorderSizePixel = 0
+LoadingBarFill.Size = UDim2.new(0, 0, 1, 0)
+LoadingBarFill.ZIndex = 102
+Instance.new("UICorner", LoadingBarFill).CornerRadius = UDim.new(1, 0)
+
+local LoadingPercent = Instance.new("TextLabel", LoadingGui)
+LoadingPercent.BackgroundTransparency = 1
+LoadingPercent.Position = UDim2.new(0, 0, 0, 105)
+LoadingPercent.Size = UDim2.new(1, 0, 0, 25)
+LoadingPercent.Font = Enum.Font.GothamBold
+LoadingPercent.Text = "0%"
+LoadingPercent.TextColor3 = Color3.fromRGB(200, 200, 200)
+LoadingPercent.TextSize = 13
+LoadingPercent.ZIndex = 101
+
+print("Part 2 Loaded")
+
+-- ==========================================
+-- القسم الثالث: زر القط العائم والواجهة الرئيسية
+-- ==========================================
+local ToggleButtonContainer = Instance.new("ImageButton")
+ToggleButtonContainer.Name = "ToggleButton"
+ToggleButtonContainer.Parent = ScreenGui
+ToggleButtonContainer.BackgroundTransparency = 1
+ToggleButtonContainer.BorderSizePixel = 0
+ToggleButtonContainer.Position = UDim2.new(0, 20, 0.5, -25)
+ToggleButtonContainer.Size = UDim2.new(0, 50, 0, 50)
+ToggleButtonContainer.AutoButtonColor = false
+ToggleButtonContainer.Visible = false
+ToggleButtonContainer.ZIndex = 50
+
+Instance.new("UICorner", ToggleButtonContainer).CornerRadius = UDim.new(1, 0)
+local ToggleStroke = Instance.new("UIStroke", ToggleButtonContainer)
+ToggleStroke.Thickness = 2
+ToggleStroke.Color = Color3.fromRGB(0, 0, 0)
+ToggleStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+TweenService:Create(ToggleStroke, strokeTweenInfo, {Color = Color3.fromRGB(255, 255, 255)}):Play()
+
+local ToggleCatImage = Instance.new("ImageLabel", ToggleButtonContainer)
+ToggleCatImage.BackgroundTransparency = 1
+ToggleCatImage.Size = UDim2.new(1, 0, 1, 0)
+ToggleCatImage.Image = "rbxassetid://87134092139361"
+ToggleCatImage.ScaleType = Enum.ScaleType.Crop
+ToggleCatImage.ZIndex = 51
+Instance.new("UICorner", ToggleCatImage).CornerRadius = UDim.new(1, 0)
+
+local circleDragging, circleDragInput, circleDragStart, circleStartPos
+ToggleButtonContainer.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        circleDragging = true
+        circleDragStart = input.Position
+        circleStartPos = ToggleButtonContainer.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then circleDragging = false end
+        end)
+    end
+end)
+ToggleButtonContainer.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        circleDragInput = input
+    end
+end)
+UserInputService.InputChanged:Connect(function(input)
+    if input == circleDragInput and circleDragging then
+        local delta = input.Position - circleDragStart
+        ToggleButtonContainer.Position = UDim2.new(circleStartPos.X.Scale, circleStartPos.X.Offset + delta.X, circleStartPos.Y.Scale, circleStartPos.Y.Offset + delta.Y)
+    end
+end)
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MainFrame.BorderSizePixel = 0
+MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+MainFrame.Size = UDim2.new(0, 560, 0, 340)
+MainFrame.Visible = false
+MainFrame.BackgroundTransparency = 1
+
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 6)
+local MainStroke = Instance.new("UIStroke", MainFrame)
+MainStroke.Thickness = 2
+MainStroke.Color = Color3.fromRGB(0, 0, 0)
+MainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+MainStroke.Transparency = 1
+TweenService:Create(MainStroke, strokeTweenInfo, {Color = Color3.fromRGB(255, 255, 255)}):Play()
+
+local TopBar = Instance.new("Frame", MainFrame)
+TopBar.Name = "TopBar"
+TopBar.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+TopBar.BorderSizePixel = 0
+TopBar.Size = UDim2.new(0, 560, 0, 35)
+Instance.new("UICorner", TopBar).CornerRadius = UDim.new(0, 6)
+
+local FixTopBar = Instance.new("Frame", TopBar)
+FixTopBar.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+FixTopBar.BorderSizePixel = 0
+FixTopBar.Position = UDim2.new(0, 0, 0.5, 0)
+FixTopBar.Size = UDim2.new(1, 0, 0.5, 0)
+
+local TitleLabel = Instance.new("TextLabel", TopBar)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.AnchorPoint = Vector2.new(0.5, 0.5)
+TitleLabel.Position = UDim2.new(0.5, 0, 0.5, 0)
+TitleLabel.Size = UDim2.new(0, 450, 1, 0)
+TitleLabel.Font = Enum.Font.GothamBlack
+TitleLabel.Text = "⚔️ jazwan_Underground war 2.0 ⚔️"
+TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+TitleLabel.TextSize = 15
+TitleLabel.TextXAlignment = Enum.TextXAlignment.Center
+
+local Sidebar = Instance.new("ScrollingFrame", MainFrame)
+Sidebar.Name = "Sidebar"
+Sidebar.Active = true
+Sidebar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+Sidebar.BorderSizePixel = 0
+Sidebar.Position = UDim2.new(0, 0, 0, 35)
+Sidebar.Size = UDim2.new(0, 145, 0, 305)
+Sidebar.CanvasSize = UDim2.new(0, 0, 0, 250)
+Sidebar.ScrollBarThickness = 2
+
+local UIListLayout = Instance.new("UIListLayout", Sidebar)
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Padding = UDim.new(0, 5)
+
+local ContainerHolder = Instance.new("Frame", MainFrame)
+ContainerHolder.Name = "ContainerHolder"
+ContainerHolder.BackgroundTransparency = 1
+ContainerHolder.Position = UDim2.new(0, 155, 0, 45)
+ContainerHolder.Size = UDim2.new(0, 395, 0, 285)
+
+print("Part 3 Loaded")
+
+-- ==========================================
+-- القسم الرابع: محتويات القوائم
+-- ==========================================
+local function CreateTabContent(name)
+    local tabFrame = Instance.new("Frame", ContainerHolder)
+    tabFrame.Name = name .. "Frame"
+    tabFrame.BackgroundTransparency = 1
+    tabFrame.BorderSizePixel = 0
+    tabFrame.Size = UDim2.new(1, 0, 1, 0)
+    tabFrame.Visible = false
+
+    local BgImage = Instance.new("ImageLabel", tabFrame)  
+    BgImage.BackgroundTransparency = 1  
+    BgImage.Size = UDim2.new(1, 0, 1, 0)  
+    BgImage.Image = "rbxassetid://78450725998826"  
+    BgImage.ScaleType = Enum.ScaleType.Stretch  
+    BgImage.ImageTransparency = 0.35  
+    BgImage.ZIndex = 0  
+      
+    return tabFrame
+end
+
+local MainMenuFrame = CreateTabContent("MainMenu")
+
+local StaticAvatarContainer = Instance.new("Frame", MainMenuFrame)
+StaticAvatarContainer.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+StaticAvatarContainer.Position = UDim2.new(0, 10, 0, 10)
+StaticAvatarContainer.Size = UDim2.new(0, 110, 0, 110)
+StaticAvatarContainer.ZIndex = 1
+Instance.new("UICorner", StaticAvatarContainer).CornerRadius = UDim.new(0, 8)
+local StaticAvatarStroke = Instance.new("UIStroke", StaticAvatarContainer)
+StaticAvatarStroke.Thickness = 2
+StaticAvatarStroke.Color = Color3.fromRGB(0, 0, 0)
+StaticAvatarStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+local StaticAvatarImage = Instance.new("ImageLabel", StaticAvatarContainer)
+StaticAvatarImage.BackgroundTransparency = 1
+StaticAvatarImage.Position = UDim2.new(0, 5, 0, 5)
+StaticAvatarImage.Size = UDim2.new(0, 100, 0, 100)
+StaticAvatarImage.Image = "rbxassetid://87134092139361"
+StaticAvatarImage.ScaleType = Enum.ScaleType.Fit
+StaticAvatarImage.ZIndex = 1
+Instance.new("UICorner", StaticAvatarImage).CornerRadius = UDim.new(0, 6)
+
+local IconsContainer = Instance.new("Frame", MainMenuFrame)
+IconsContainer.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+IconsContainer.Position = UDim2.new(0, 10, 0, 128)
+IconsContainer.Size = UDim2.new(0, 110, 0, 36)
+IconsContainer.ZIndex = 1
+Instance.new("UICorner", IconsContainer).CornerRadius = UDim.new(0, 8)
+Instance.new("UIStroke", IconsContainer).Color = Color3.fromRGB(0, 0, 0)
+
+local btnTikTok = Instance.new("ImageButton", IconsContainer)
+btnTikTok.BackgroundColor3 = Color3.fromRGB(220, 220, 220)
+btnTikTok.BorderSizePixel = 0
+btnTikTok.Position = UDim2.new(0, 4, 0, 4)
+btnTikTok.Size = UDim2.new(0, 48, 0, 28)
+btnTikTok.Image = "rbxassetid://105575032928910"
+btnTikTok.ZIndex = 2
+Instance.new("UICorner", btnTikTok).CornerRadius = UDim.new(0, 4)
+btnTikTok.MouseButton1Click:Connect(function()
+    safePlaySound()
+    pcall(function() setclipboard("jazwan27") end)
+    game:GetService("StarterGui"):SetCore("SendNotification", {Title = "Notification", Text = "The TikTok username was copied", Duration = 3})
+end)
+
+local btnMessage = Instance.new("TextButton", IconsContainer)
+btnMessage.BackgroundColor3 = Color3.fromRGB(220, 220, 220)
+btnMessage.BorderSizePixel = 0
+btnMessage.Position = UDim2.new(0, 58, 0, 4)
+btnMessage.Size = UDim2.new(0, 48, 0, 28)
+btnMessage.Font = Enum.Font.Gotham
+btnMessage.Text = "💬"
+btnMessage.TextColor3 = Color3.fromRGB(0, 0, 0)
+btnMessage.TextSize = 14
+btnMessage.ZIndex = 2
+Instance.new("UICorner", btnMessage).CornerRadius = UDim.new(0, 4)
+btnMessage.MouseButton1Click:Connect(function()
+    safePlaySound()
+    if ScreenGui:FindFirstChild("GhazwanMessagePopup") then return end
+    local popup = Instance.new("Frame", ScreenGui)
+    popup.Name = "GhazwanMessagePopup"
+    popup.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    popup.BorderSizePixel = 0
+    popup.Position = UDim2.new(0.5, -200, 0.5, -75)
+    popup.Size = UDim2.new(0, 400, 0, 150)
+    popup.ZIndex = 10
+    Instance.new("UICorner", popup).CornerRadius = UDim.new(0, 6)
+    Instance.new("UIStroke", popup).Color = Color3.fromRGB(0, 0, 0)
+
+    local popText = Instance.new("TextLabel", popup)  
+    popText.BackgroundTransparency = 1  
+    popText.Position = UDim2.new(0, 15, 0, 15)  
+    popText.Size = UDim2.new(1, -30, 1, -30)  
+    popText.Font = Enum.Font.GothamMedium  
+    popText.Text = "Goodness be with you all, I am Ghazwan\n\nI want to tell you that the script is 100% safe, and don't worry about being banned or having your sword level reduced; this script is my responsibility.\n\nProvided that you cooperate with us and do not use any external secondary scripts"  
+    popText.TextColor3 = Color3.fromRGB(255, 255, 255)  
+    popText.TextSize = 12  
+    popText.TextWrapped = true  
+    popText.TextXAlignment = Enum.TextXAlignment.Center  
+    popText.TextYAlignment = Enum.TextYAlignment.Center  
+    popText.ZIndex = 11  
+    task.delay(9, function() if popup then popup:Destroy() end end)
+end)
+
+local WelcomeLabel = Instance.new("TextLabel", MainMenuFrame)
+WelcomeLabel.BackgroundTransparency = 1
+WelcomeLabel.Position = UDim2.new(0, 135, 0, 10)
+WelcomeLabel.Size = UDim2.new(0, 250, 0, 110)
+WelcomeLabel.Font = Enum.Font.GothamBold
+WelcomeLabel.Text = "Welcome @" .. localPlayer.Name .. "\nSubscription status: Free week\nTo get a key valid for one week, please visit TikTok. jazwan27"
+WelcomeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+WelcomeLabel.TextSize = 13
+WelcomeLabel.TextXAlignment = Enum.TextXAlignment.Left
+WelcomeLabel.TextYAlignment = Enum.TextYAlignment.Top
+WelcomeLabel.TextWrapped = true
+WelcomeLabel.ZIndex = 1
+
+local CreatorsBox = Instance.new("Frame", MainMenuFrame)
+CreatorsBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+CreatorsBox.BorderSizePixel = 0
+CreatorsBox.Position = UDim2.new(0, 10, 0, 172)
+CreatorsBox.Size = UDim2.new(0, 375, 0, 100)
+CreatorsBox.ZIndex = 1
+Instance.new("UICorner", CreatorsBox).CornerRadius = UDim.new(0, 8)
+Instance.new("UIStroke", CreatorsBox).Color = Color3.fromRGB(150, 150, 150)
+
+local ReleaseNotesLabel = Instance.new("TextLabel", CreatorsBox)
+ReleaseNotesLabel.BackgroundTransparency = 1
+ReleaseNotesLabel.Position = UDim2.new(0, 15, 0, 8)
+ReleaseNotesLabel.Size = UDim2.new(1, -30, 1, -16)
+ReleaseNotesLabel.Font = Enum.Font.GothamBold
+ReleaseNotesLabel.Text = "Release Information [v2.0]\n\n1. Improved user interface\n2. Adding other features\n3. Added quality improvement\n4. Improve the aimbot"
+ReleaseNotesLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+ReleaseNotesLabel.TextSize = 12
+ReleaseNotesLabel.TextXAlignment = Enum.TextXAlignment.Left
+ReleaseNotesLabel.TextYAlignment = Enum.TextYAlignment.Top
+ReleaseNotesLabel.TextWrapped = true
+ReleaseNotesLabel.ZIndex = 1
+
+local PlayerFrame = CreateTabContent("Player")
+
+local function createMiscButton(text, x, y, width)
+    local btn = Instance.new("TextButton", PlayerFrame)
+    btn.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
+    btn.Position = UDim2.new(0, x, 0, y)
+    btn.Size = UDim2.new(0, width, 0, 35)
+    btn.Font = Enum.Font.GothamBold
+    btn.Text = text
+    btn.TextColor3 = Color3.fromRGB(0, 0, 0)
+    btn.TextSize = 16
+    btn.ZIndex = 1
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+
+    local Indicator = Instance.new("ImageLabel", btn)  
+    Indicator.BackgroundTransparency = 1  
+    Indicator.Position = UDim2.new(0, 8, 0.5, -6)   
+    Indicator.Size = UDim2.new(0, 12, 0, 12)  
+    Indicator.Image = "rbxassetid://3926305904"   
+    Indicator.ImageColor3 = Color3.fromRGB(255, 50, 50)   
+    Indicator.ZIndex = 2  
+      
+    local toggled = false  
+    btn.MouseButton1Click:Connect(function()  
+        safePlaySound()  
+        toggled = not toggled  
+        if toggled then Indicator.ImageColor3 = Color3.fromRGB(50, 255, 50) else Indicator.ImageColor3 = Color3.fromRGB(255, 50, 50) end  
+    end)  
+    return btn
+end
+
+local yPos = 10
+createMiscButton("رفع الاضاءة", 10, yPos, 180)
+createMiscButton("ESP", 200, yPos, 180)
+yPos = yPos + 45
+createMiscButton("اوتو كليكر", 10, yPos, 180)
+createMiscButton("شادر", 200, yPos, 180)
+yPos = yPos + 45
+createMiscButton("صباح", 10, yPos, 180)
+createMiscButton("ليل", 200, yPos, 180)
+yPos = yPos + 45
+createMiscButton("ادمن IY", 10, yPos, 180)
+createMiscButton("تخفيف لاق", 200, yPos, 180)
+yPos = yPos + 45
+createMiscButton("إعادة الانضمام", 10, yPos, 180)
+createMiscButton("تغيير السيرفر", 200, yPos, 180)
+yPos = yPos + 45
+createMiscButton("سكربت الشات العام", 10, yPos, 370)
+
+print("Part 4 Loaded")
+
+-- ==========================================
+-- القسم الخامس: التبويب الثاني (Underground War)
+-- ==========================================
+local Tab2Frame = CreateTabContent("UndergroundWar")
+local Tab4Frame = CreateTabContent("ImprovingQuality")
+local Tab5Frame = CreateTabContent("Settings")
+
+local DynamicProfileContainer = Instance.new("Frame", Tab2Frame)
+DynamicProfileContainer.Name = "DynamicProfileContainer"
+DynamicProfileContainer.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+DynamicProfileContainer.Position = UDim2.new(0, 10, 0, 10)
+DynamicProfileContainer.Size = UDim2.new(0, 110, 0, 110)
+DynamicProfileContainer.ZIndex = 1
+
+local DynamicCorner = Instance.new("UICorner", DynamicProfileContainer)
+DynamicCorner.CornerRadius = UDim.new(0, 8)
+
+local DynamicStroke = Instance.new("UIStroke", DynamicProfileContainer)
+DynamicStroke.Thickness = 2
+DynamicStroke.Color = Color3.fromRGB(0, 0, 0)
+DynamicStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+local DynamicProfileImage = Instance.new("ImageLabel", DynamicProfileContainer)
+DynamicProfileImage.Name = "DynamicProfileImage"
+DynamicProfileImage.BackgroundTransparency = 1
+DynamicProfileImage.Position = UDim2.new(0, 5, 0, 5)
+DynamicProfileImage.Size = UDim2.new(0, 100, 0, 100)
+DynamicProfileImage.ScaleType = Enum.ScaleType.Crop
+DynamicProfileImage.ZIndex = 2
+
+local DynamicImageCorner = Instance.new("UICorner", DynamicProfileImage)
+DynamicImageCorner.CornerRadius = UDim.new(0, 6)
+
+task.spawn(function()
+    local player = Players.LocalPlayer
+    for i = 1, 10 do  
+        local success, imageUrl, isReady = pcall(function()  
+            return Players:GetUserThumbnailAsync(player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)  
+        end)  
+        if success and imageUrl and imageUrl ~= "" then  
+            DynamicProfileImage.Image = imageUrl  
+            if isReady then break end  
+        end  
+        task.wait(0.5)  
+    end
+end)
+
+local InfoLabel = Instance.new("TextLabel", Tab2Frame)
+InfoLabel.BackgroundTransparency = 1
+InfoLabel.Position = UDim2.new(0, 130, 0, 10)
+InfoLabel.Size = UDim2.new(0, 250, 0, 110)
+InfoLabel.Font = Enum.Font.GothamBold
+InfoLabel.Text = "Hello " .. localPlayer.Name .. " 👋\nThe scripts are secure and not exposed to the system.\nI hope you will not use secondary scripts. 🙏"
+InfoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+InfoLabel.TextSize = 13
+InfoLabel.TextXAlignment = Enum.TextXAlignment.Left
+InfoLabel.TextYAlignment = Enum.TextYAlignment.Top
+InfoLabel.TextWrapped = true
+InfoLabel.ZIndex = 1
+
+local function showMadaWelcomeLogo()
+    local welcomeGui = Instance.new("ScreenGui")
+    welcomeGui.Name = "GhazwanWelcomeUI"
+    welcomeGui.ResetOnSpawn = false
+    pcall(function() welcomeGui.Parent = CoreGui end)
+
+    local mainFrame = Instance.new("Frame")  
+    mainFrame.Size = UDim2.new(0, 350, 0, 70)   
+    mainFrame.Position = UDim2.new(0.5, 0, 0.15, 0)   
+    mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)  
+    mainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)  
+    mainFrame.BorderSizePixel = 0  
+    mainFrame.Parent = welcomeGui  
+
+    local uiCorner = Instance.new("UICorner")  
+    uiCorner.CornerRadius = UDim.new(0, 8)  
+    uiCorner.Parent = mainFrame  
+
+    local uiStroke = Instance.new("UIStroke")  
+    uiStroke.Thickness = 3  
+    uiStroke.Color = Color3.fromRGB(255, 255, 255)  
+    uiStroke.Parent = mainFrame  
+
+    local gradient = Instance.new("UIGradient")  
+    gradient.Color = ColorSequence.new{  
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),  
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),  
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))  
+    }  
+    gradient.Parent = uiStroke  
+
+    local connection  
+    connection = RunService.RenderStepped:Connect(function()  
+        if welcomeGui and welcomeGui.Parent then  
+            gradient.Rotation = (gradient.Rotation + 3) % 360  
+        else  
+            if connection then connection:Disconnect() end  
+        end  
+    end)  
+
+    local textLabel = Instance.new("TextLabel")  
+    textLabel.Size = UDim2.new(1, -10, 1, -10)  
+    textLabel.Position = UDim2.new(0.5, 0, 0.5, 0)  
+    textLabel.AnchorPoint = Vector2.new(0.5, 0.5)  
+    textLabel.BackgroundTransparency = 1  
+    textLabel.Text = "Welcome, Please do not use secondary scripts\nIf you have any questions, please feel free to ask the editor.\nTikTok: jazwan27"  
+    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)  
+    textLabel.Font = Enum.Font.GothamBold  
+    textLabel.TextSize = 12  
+    textLabel.TextWrapped = true  
+    textLabel.Parent = mainFrame  
+      
+    task.delay(10, function() if welcomeGui then welcomeGui:Destroy() end end)
+end
+
+-- بناء زر السيف مع صندوق عازل
+local function createReachControl(parent, x, y)
+    local attackRange = 18
+    local MAX_RANGE = 40
+    local MIN_RANGE = 1
+    local isReachActive = false
+
+    local boxFrame = Instance.new("Frame", parent)
+    boxFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    boxFrame.BorderSizePixel = 0
+    boxFrame.Position = UDim2.new(0, x, 0, y)
+    boxFrame.Size = UDim2.new(0, 375, 0, 45)
+    boxFrame.ZIndex = 1
+    Instance.new("UICorner", boxFrame).CornerRadius = UDim.new(0, 8)
+    local boxStroke = Instance.new("UIStroke", boxFrame)
+    boxStroke.Color = Color3.fromRGB(150, 150, 150)
+    boxStroke.Thickness = 1
+
+    local btn = Instance.new("TextButton", boxFrame)  
+    btn.BackgroundColor3 = Color3.fromRGB(230, 230, 230)  
+    btn.Position = UDim2.new(0, 5, 0.5, -17)  
+    btn.Size = UDim2.new(0, 180, 0, 34)  
+    btn.Font = Enum.Font.GothamBold  
+    btn.Text = "Al Saif Mada Fund"  
+    btn.TextColor3 = Color3.fromRGB(0, 0, 0)  
+    btn.TextSize = 13  
+    btn.ZIndex = 2  
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)  
+
+    local Indicator = Instance.new("ImageLabel", btn)  
+    Indicator.BackgroundTransparency = 1  
+    Indicator.Position = UDim2.new(0, 6, 0.5, -6)  
+    Indicator.Size = UDim2.new(0, 12, 0, 12)  
+    Indicator.Image = "rbxassetid://3926305904"  
+    Indicator.ImageColor3 = Color3.fromRGB(255, 50, 50)  
+    Indicator.ZIndex = 3  
+
+    local counterContainer = Instance.new("Frame", boxFrame)  
+    counterContainer.BackgroundColor3 = Color3.fromRGB(25, 25, 25)  
+    counterContainer.Position = UDim2.new(0, 190, 0.5, -17)  
+    counterContainer.Size = UDim2.new(0, 180, 0, 34)  
+    counterContainer.ZIndex = 2  
+    Instance.new("UICorner", counterContainer).CornerRadius = UDim.new(0, 4)  
+    local stroke = Instance.new("UIStroke", counterContainer)  
+    stroke.Color = Color3.fromRGB(0, 0, 0)  
+
+    local minusBtn = Instance.new("TextButton", counterContainer)  
+    minusBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)  
+    minusBtn.Position = UDim2.new(0, 5, 0.5, -12)  
+    minusBtn.Size = UDim2.new(0, 25, 0, 24)  
+    minusBtn.Font = Enum.Font.GothamBold  
+    minusBtn.Text = "-"  
+    minusBtn.TextColor3 = Color3.fromRGB(255, 255, 255)  
+    minusBtn.TextSize = 16  
+    minusBtn.ZIndex = 3  
+    Instance.new("UICorner", minusBtn).CornerRadius = UDim.new(0, 4)  
+
+    local counterLabel = Instance.new("TextLabel", counterContainer)  
+    counterLabel.BackgroundTransparency = 1  
+    counterLabel.Position = UDim2.new(0, 35, 0, 0)  
+    counterLabel.Size = UDim2.new(0, 110, 1, 0)  
+    counterLabel.Font = Enum.Font.GothamBold  
+    counterLabel.Text = "Mada: " .. tostring(attackRange)  
+    counterLabel.TextColor3 = Color3.fromRGB(0, 255, 150)  
+    counterLabel.TextSize = 13  
+    counterLabel.ZIndex = 3  
+
+    local plusBtn = Instance.new("TextButton", counterContainer)  
+    plusBtn.BackgroundColor3 = Color3.fromRGB(40, 180, 80)  
+    plusBtn.Position = UDim2.new(1, -30, 0.5, -12)  
+    plusBtn.Size = UDim2.new(0, 25, 0, 24)  
+    plusBtn.Font = Enum.Font.GothamBold  
+    plusBtn.Text = "+"  
+    plusBtn.TextColor3 = Color3.fromRGB(255, 255, 255)  
+    plusBtn.TextSize = 16  
+    plusBtn.ZIndex = 3  
+    Instance.new("UICorner", plusBtn).CornerRadius = UDim.new(0, 4)  
+
+    minusBtn.MouseButton1Click:Connect(function()  
+        safePlaySound()  
+        if attackRange > MIN_RANGE then  
+            attackRange = attackRange - 1  
+            counterLabel.Text = "Mada: " .. tostring(attackRange)  
+        end  
+    end)  
+
+    plusBtn.MouseButton1Click:Connect(function()  
+        safePlaySound()  
+        if attackRange < MAX_RANGE then  
+            attackRange = attackRange + 1  
+            counterLabel.Text = "Mada: " .. tostring(attackRange)  
+        end  
+    end)  
+
+    btn.MouseButton1Click:Connect(function()  
+        safePlaySound()  
+        isReachActive = not isReachActive  
+        Indicator.ImageColor3 = isReachActive and Color3.fromRGB(50, 255, 50) or Color3.fromRGB(255, 50, 50)  
+        if isReachActive then showMadaWelcomeLogo() end  
+    end)  
+
+    local activeIndicator = nil  
+    local hueCounter = 0  
+
+    local function getSwordPart(sword)  
+        if not sword then return nil end  
+        return sword:FindFirstChild("Handle") or sword:FindFirstChild("Blade") or sword:FindFirstChildOfClass("Part") or sword:FindFirstChildOfClass("MeshPart")  
+    end  
+
+    RunService.RenderStepped:Connect(function()  
+        if not isReachActive then  
+            if activeIndicator then activeIndicator:Destroy() activeIndicator = nil end  
+            return  
+        end  
+
+        local character = localPlayer.Character  
+        if not character then return end  
+
+        local sword = character:FindFirstChildOfClass("Tool")  
+        local myRoot = character:FindFirstChild("HumanoidRootPart")  
+        local myHumanoid = character:FindFirstChildOfClass("Humanoid")  
+
+        if not myHumanoid or myHumanoid.Health <= 0 then  
+            if activeIndicator then activeIndicator:Destroy() activeIndicator = nil end  
+            return  
+        end  
+
+        if sword and myRoot then  
+            local swordPart = getSwordPart(sword)  
+            if swordPart then  
+                if not activeIndicator or activeIndicator.Parent ~= swordPart then  
+                    if activeIndicator then activeIndicator:Destroy() end  
+                    pcall(function()  
+                        activeIndicator = Instance.new("SelectionBox")  
+                        activeIndicator.Adornee = swordPart  
+                        activeIndicator.Parent = swordPart  
+                    end)  
+                end  
+
+                if activeIndicator then  
+                    hueCounter = hueCounter + 0.015  
+                    activeIndicator.Color3 = Color3.fromHSV(hueCounter % 1, 1, 1)  
+                end  
+
+                for _, player in ipairs(Players:GetPlayers()) do  
+                    if player ~= localPlayer and player.Character then  
+                        local enemyCharacter = player.Character  
+                        local enemyRoot = enemyCharacter:FindFirstChild("HumanoidRootPart")  
+                        local enemyHumanoid = enemyCharacter:FindFirstChildOfClass("Humanoid")  
+
+                        if enemyRoot and enemyHumanoid and enemyHumanoid.Health > 0 then  
+                            local distance = (myRoot.Position - enemyRoot.Position).Magnitude  
+                            if distance <= attackRange then  
+                                local originalCFrame = myRoot.CFrame  
+                                local targetCFrame = enemyRoot.CFrame * CFrame.new(0, 0, 2)
+                                myRoot.CFrame = targetCFrame
+                                pcall(function()  
+                                    firetouchinterest(swordPart, enemyRoot, 0)  
+                                    firetouchinterest(swordPart, enemyRoot, 1)  
+                                end)  
+                                myRoot.CFrame = originalCFrame  
+                            end  
+                        end  
+                    end  
+                end  
+            else  
+                if activeIndicator then activeIndicator:Destroy() activeIndicator = nil end  
+            end  
+        else  
+            if activeIndicator then activeIndicator:Destroy() activeIndicator = nil end  
+        end  
+    end)
+end
+
+createReachControl(Tab2Frame, 10, 130)
+
+-- ==========================================
+-- زر الانتقال خلف اللاعبين مع عداد السرعة وصندوق عازل
+-- ==========================================
+local function createTeleportBehindControl(parent, x, y)
+    local orbitRadius = 5
+    local orbitSpeed = 5
+    local activationDistance = 15
+    local MAX_SPEED = 23
+    local MIN_SPEED = 1
+    local teleportToggled = false
+
+    local boxFrame = Instance.new("Frame", parent)
+    boxFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    boxFrame.BorderSizePixel = 0
+    boxFrame.Position = UDim2.new(0, x, 0, y)
+    boxFrame.Size = UDim2.new(0, 375, 0, 45)
+    boxFrame.ZIndex = 1
+    Instance.new("UICorner", boxFrame).CornerRadius = UDim.new(0, 8)
+    local boxStroke = Instance.new("UIStroke", boxFrame)
+    boxStroke.Color = Color3.fromRGB(150, 150, 150)
+    boxStroke.Thickness = 1
+
+    local btn = Instance.new("TextButton", boxFrame)
+    btn.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
+    btn.Position = UDim2.new(0, 5, 0.5, -17)
+    btn.Size = UDim2.new(0, 180, 0, 34)
+    btn.Font = Enum.Font.GothamBold
+    btn.Text = "Teleport Behind"
+    btn.TextColor3 = Color3.fromRGB(0, 0, 0)
+    btn.TextSize = 13
+    btn.ZIndex = 2
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+
+    local Indicator = Instance.new("ImageLabel", btn)  
+    Indicator.BackgroundTransparency = 1  
+    Indicator.Position = UDim2.new(0, 6, 0.5, -6)  
+    Indicator.Size = UDim2.new(0, 12, 0, 12)  
+    Indicator.Image = "rbxassetid://3926305904"  
+    Indicator.ImageColor3 = Color3.fromRGB(255, 50, 50)  
+    Indicator.ZIndex = 3
+
+    local counterContainer = Instance.new("Frame", boxFrame)  
+    counterContainer.BackgroundColor3 = Color3.fromRGB(25, 25, 25)  
+    counterContainer.Position = UDim2.new(0, 190, 0.5, -17)  
+    counterContainer.Size = UDim2.new(0, 180, 0, 34)  
+    counterContainer.ZIndex = 2  
+    Instance.new("UICorner", counterContainer).CornerRadius = UDim.new(0, 4)  
+    local stroke = Instance.new("UIStroke", counterContainer)  
+    stroke.Color = Color3.fromRGB(0, 0, 0)  
+
+    local minusBtn = Instance.new("TextButton", counterContainer)  
+    minusBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)  
+    minusBtn.Position = UDim2.new(0, 5, 0.5, -12)  
+    minusBtn.Size = UDim2.new(0, 25, 0, 24)  
+    minusBtn.Font = Enum.Font.GothamBold  
+    minusBtn.Text = "-"  
+    minusBtn.TextColor3 = Color3.fromRGB(255, 255, 255)  
+    minusBtn.TextSize = 16  
+    minusBtn.ZIndex = 3  
+    Instance.new("UICorner", minusBtn).CornerRadius = UDim.new(0, 4)  
+
+    local counterLabel = Instance.new("TextLabel", counterContainer)  
+    counterLabel.BackgroundTransparency = 1  
+    counterLabel.Position = UDim2.new(0, 35, 0, 0)  
+    counterLabel.Size = UDim2.new(0, 110, 1, 0)  
+    counterLabel.Font = Enum.Font.GothamBold  
+    counterLabel.Text = "Speed: " .. tostring(orbitSpeed)  
+    counterLabel.TextColor3 = Color3.fromRGB(0, 255, 150)  
+    counterLabel.TextSize = 13  
+    counterLabel.ZIndex = 3  
+
+    local plusBtn = Instance.new("TextButton", counterContainer)  
+    plusBtn.BackgroundColor3 = Color3.fromRGB(40, 180, 80)  
+    plusBtn.Position = UDim2.new(1, -30, 0.5, -12)  
+    plusBtn.Size = UDim2.new(0, 25, 0, 24)  
+    plusBtn.Font = Enum.Font.GothamBold  
+    plusBtn.Text = "+"  
+    plusBtn.TextColor3 = Color3.fromRGB(255, 255, 255)  
+    plusBtn.TextSize = 16  
+    plusBtn.ZIndex = 3  
+    Instance.new("UICorner", plusBtn).CornerRadius = UDim.new(0, 4)  
+
+    minusBtn.MouseButton1Click:Connect(function()  
+        safePlaySound()  
+        if orbitSpeed > MIN_SPEED then  
+            orbitSpeed = orbitSpeed - 1  
+            counterLabel.Text = "Speed: " .. tostring(orbitSpeed)  
+        end  
+    end)  
+
+    plusBtn.MouseButton1Click:Connect(function()  
+        safePlaySound()  
+        if orbitSpeed < MAX_SPEED then  
+            orbitSpeed = orbitSpeed + 1  
+            counterLabel.Text = "Speed: " .. tostring(orbitSpeed)  
+        end  
+    end)  
+
+    local function isBlockedByGrass(myPos, targetPos, myChar, targetChar)
+        local raycastParams = RaycastParams.new()
+        if Enum and Enum.RaycastFilterType and Enum.RaycastFilterType.Exclude then
+            raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+        else
+            raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
         end
+        raycastParams.FilterDescendantsInstances = {myChar, targetChar}
+        raycastParams.IgnoreWater = true
+
+        local direction = targetPos - myPos
+        local result = Workspace:Raycast(myPos, direction, raycastParams)
+
+        if result and result.Instance then
+            return true 
+        end
+        return false 
     end
-    return targetTeamName
-end
 
-local function animateNotification(notification)
-    local endPos = UDim2.new(0.5, -100, 0.4, -50) 
-    
-    local tweenInfo = TweenInfo.new(
-        1, 
-        Enum.EasingStyle.Elastic, 
-        Enum.EasingDirection.Out, 
-        0, 
-        false, 
-        0 
-    )
-    
-    local tween = game:GetService("TweenService"):Create(notification, tweenInfo, {Position = endPos})
-    
-    tween:Play()
-    
-    wait(2) 
-    
-    tween:Destroy()
-end
-
-local function displayNotification(message)
-    local notification = Instance.new("ScreenGui")
-    notification.Name = "Notification"
-    
-    local success, parent = pcall(function() return gethui() end)
-    notification.Parent = success and parent or game.Players.LocalPlayer:WaitForChild("PlayerGui")
-
-    local textLabel = Instance.new("TextLabel")
-    textLabel.Parent = notification
-    textLabel.Size = UDim2.new(0, 200, 0, 50)
-    textLabel.Position = UDim2.new(0.5, -100, 0.55, -50)
-    textLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    textLabel.Text = message
-    textLabel.TextSize = 20
-    textLabel.Font = Enum.Font.SourceSans
-    textLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
-
-    animateNotification(textLabel)
-
-    wait(2)
-    for transparency = 0, 1, 0.1 do
-        textLabel.BackgroundTransparency = transparency
-        wait(0.1)
-    end
-    notification:Destroy()
-end
-
-local function findClosestPlayer()
-    local players = game.Players:GetPlayers()
-    local closestPlayer = nil
-    local shortestDistance = math.huge
-    
-    local tool = player.Character:FindFirstChildOfClass("Tool")
-    local head = player.Character:FindFirstChild("Head")
-    
-    if tool and head then
-        local camera = workspace.CurrentCamera
-        local shooterPosition = head.CFrame.Position + (camera.CFrame.LookVector * 1.5)
+    local function getNearestTarget()
+        local nearestDistance = activationDistance
+        local nearestChar = nil
+        local character = localPlayer.Character
         
-        local currentTargetTeam = getTargetTeam()
-        
-        for _, plyr in ipairs(players) do
-            if plyr ~= player and plyr.Team and plyr.Team.Name == currentTargetTeam and plyr.Character and plyr.Character:FindFirstChild("Humanoid") and plyr.Character.Humanoid.Health > 0 then
-                local targetPosition = plyr.Character.HumanoidRootPart.Position
-                
-                local raycastParams = RaycastParams.new()
-                raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-                raycastParams.FilterDescendantsInstances = {player.Character}
-                local rayResult = workspace:Raycast(shooterPosition, targetPosition - shooterPosition, raycastParams)
-                
-                local isVisible = false
-                if rayResult and rayResult.Instance:IsDescendantOf(plyr.Character) then
-                    isVisible = true
-                elseif not rayResult then
-                    isVisible = true
-                end
-                
-                if isVisible then
-                    local horizontalDistance = (Vector3.new(targetPosition.X, 0, targetPosition.Z) - Vector3.new(shooterPosition.X, 0, shooterPosition.Z)).magnitude
-                    local heightDifference = math.abs(targetPosition.Y - shooterPosition.Y)
-                    local totalDistance = (horizontalDistance^2 + heightDifference^2)^0.5
-                    
-                    if totalDistance < shortestDistance then
-                        closestPlayer = plyr
-                        shortestDistance = totalDistance
+        if character and character:FindFirstChild("HumanoidRootPart") then
+            local myPos = character.HumanoidRootPart.Position
+            for _, player in ipairs(Players:GetPlayers()) do
+                local isEnemy = (player ~= localPlayer) and (not localPlayer.Team or player.Team ~= localPlayer.Team)
+                if isEnemy then
+                    local targetChar = player.Character
+                    if targetChar then
+                        local targetHRP = targetChar:FindFirstChild("HumanoidRootPart")
+                        local targetHum = targetChar:FindFirstChild("Humanoid")
+                        if targetHRP and targetHum and targetHum.Health > 0 then
+                            local distance = (targetHRP.Position - myPos).Magnitude
+                            if distance < nearestDistance then
+                                if not isBlockedByGrass(myPos, targetHRP.Position, character, targetChar) then
+                                    nearestDistance = distance
+                                    nearestChar = targetChar
+                                end
+                            end
+                        end
                     end
                 end
             end
         end
-    else
-        if not tool then
-            print("No tool equipped.")
-        end
+        return nearestChar
     end
-    
-    return closestPlayer, shortestDistance
-end
 
-local function predictPosition(targetPosition, targetVelocity)
-    local head = player.Character:FindFirstChild("Head")
-    local camera = workspace.CurrentCamera
-    
-    local shooterPosition = head and (head.CFrame.Position + (camera.CFrame.LookVector * 1.5)) or player.Character.HumanoidRootPart.Position
-    local distanceToTarget = (targetPosition - shooterPosition).magnitude
-    
-    local predictionDistance = math.clamp(distanceToTarget, minPredictionDistance, maxPredictionDistance)
-    local timeToImpact = predictionDistance / bulletSpeed
-    
-    return targetPosition + targetVelocity * timeToImpact
-end
-
-local function fireRemoteEvent(targetPlayer)
-    if targetPlayer then
-        local currentTime = os.time()
-        if currentTime - lastShotTime >= cooldown then
-            local targetPosition = targetPlayer.Character.HumanoidRootPart.Position
-            local targetVelocity = targetPlayer.Character.HumanoidRootPart.Velocity
-            
-            local predictedPosition = predictPosition(targetPosition, targetVelocity)
-            
-            local args = {
-                [1] = predictedPosition,
-                [2] = "Sniper"
-            }
-            RemoteEvent:FireServer(unpack(args))
-            
-            local tool = player.Character:FindFirstChildOfClass("Tool")
-            if tool then
-                tool:Activate()
-            end
-            
-            lastShotTime = currentTime
+    btn.MouseButton1Click:Connect(function()
+        safePlaySound()
+        teleportToggled = not teleportToggled
+        if teleportToggled then
+            Indicator.ImageColor3 = Color3.fromRGB(50, 255, 50)
+            showMadaWelcomeLogo()
+        else
+            Indicator.ImageColor3 = Color3.fromRGB(255, 50, 50)
         end
-    else
-        print("No valid players found on the specified team nearby.")
-    end
-end
-
-local gui = Instance.new("ScreenGui")
-local success, parent = pcall(function() return gethui() end)
-gui.Parent = success and parent or game.Players.LocalPlayer:WaitForChild("PlayerGui")
-
-local function createWelcomeGUI()
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "GhazwanWelcomeUI"
-    screenGui.ResetOnSpawn = false
-    
-    local successCore = pcall(function()
-        screenGui.Parent = CoreGui
     end)
-    if not successCore then
-        screenGui.Parent = player:WaitForChild("PlayerGui")
-    end
-
-    local mainFrame = Instance.new("Frame")
-    mainFrame.Size = UDim2.new(0, 350, 0, 70) 
-    mainFrame.Position = UDim2.new(0.5, 0, 0.15, 0) 
-    mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-    mainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    mainFrame.BorderSizePixel = 0
-    mainFrame.Parent = screenGui
-
-    local uiCorner = Instance.new("UICorner")
-    uiCorner.CornerRadius = UDim.new(0, 8)
-    uiCorner.Parent = mainFrame
-
-    local uiStroke = Instance.new("UIStroke")
-    uiStroke.Thickness = 3
-    uiStroke.Color = Color3.fromRGB(255, 255, 255)
-    uiStroke.Parent = mainFrame
-
-    local gradient = Instance.new("UIGradient")
-    gradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
-    }
-    gradient.Parent = uiStroke
 
     RunService.RenderStepped:Connect(function()
-        gradient.Rotation = (gradient.Rotation + 3) % 360
-    end)
-
-    local textLabel = Instance.new("TextLabel")
-    textLabel.Size = UDim2.new(1, -10, 1, -10)
-    textLabel.Position = UDim2.new(0.5, 0, 0.5, 0)
-    textLabel.AnchorPoint = Vector2.new(0.5, 0.5)
-    textLabel.BackgroundTransparency = 1
-    textLabel.Text = "Welcome, Please do not use secondary scripts\nIf you have any questions, please feel free to ask the editor.\nTikTok: jazwan27"
-    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    textLabel.Font = Enum.Font.GothamBold
-    textLabel.TextSize = 12
-    textLabel.TextWrapped = true
-    textLabel.Parent = mainFrame
-    
-    task.delay(10, function()
-        if screenGui then
-            screenGui:Destroy()
-        end
-    end)
-end
-
-createWelcomeGUI()
-
-local targetCatButton = Instance.new("ImageButton")
-targetCatButton.Parent = gui
-targetCatButton.Position = UDim2.new(1, -100, 0.5, -37) 
-targetCatButton.Size = UDim2.new(0, 75, 0, 75) 
-targetCatButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-targetCatButton.Image = "rbxassetid://79800588917778" 
-targetCatButton.Active = true 
-
-local uiCorner = Instance.new("UICorner")
-uiCorner.CornerRadius = UDim.new(1, 0)
-uiCorner.Parent = targetCatButton
-
-local CatStroke = Instance.new("UIStroke")
-CatStroke.Thickness = 3
-CatStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-CatStroke.Parent = targetCatButton
-
-local catGradient = Instance.new("UIGradient")
-catGradient.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
-}
-catGradient.Parent = CatStroke
-
-RunService.RenderStepped:Connect(function()
-    catGradient.Rotation = (catGradient.Rotation + 3) % 360
-end)
-
-local dragging
-local dragInput
-local dragStart
-local startPos
-
-targetCatButton.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = targetCatButton.Position
+        if not teleportToggled then return end
         
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
-end)
-
-targetCatButton.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        dragInput = input
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        local delta = input.Position - dragStart
-        targetCatButton.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-end)
-
-local isDragging = false
-targetCatButton.MouseButton1Click:Connect(function()
-    local target = findClosestPlayer()
-    
-    if not target then
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "System",
-            Text = "No enemies found nearby!",
-            Icon = "rbxassetid://79800588917778",
-            Duration = 3
-        })
-    end
-    
-    fireRemoteEvent(target)
-end)
-
-
-
-سكربت السرعة 👇👇👇👇👇👇👇👇👇👇👇👇👇👇
--- =====================================================================
--- CFrame Safe Speed Bypass - Safe Distance (25) + Ghazwan Welcome UI
--- =====================================================================
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local CoreGui = game:GetService("CoreGui")
-local player = Players.LocalPlayer
-
-local function createWelcomeGUI()
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "GhazwanWelcomeUI"
-    screenGui.ResetOnSpawn = false
-    
-    local success = pcall(function()
-        screenGui.Parent = CoreGui
-    end)
-    if not success then
-        screenGui.Parent = player:WaitForChild("PlayerGui")
-    end
-
-    local mainFrame = Instance.new("Frame")
-    mainFrame.Size = UDim2.new(0, 350, 0, 70) 
-    mainFrame.Position = UDim2.new(0.5, 0, 0.15, 0) 
-    mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-    mainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    mainFrame.BorderSizePixel = 0
-    mainFrame.Parent = screenGui
-
-    local uiCorner = Instance.new("UICorner")
-    uiCorner.CornerRadius = UDim.new(0, 8)
-    uiCorner.Parent = mainFrame
-
-    local uiStroke = Instance.new("UIStroke")
-    uiStroke.Thickness = 3
-    uiStroke.Color = Color3.fromRGB(255, 255, 255)
-    uiStroke.Parent = mainFrame
-
-    local gradient = Instance.new("UIGradient")
-    gradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
-    }
-    gradient.Parent = uiStroke
-
-    RunService.RenderStepped:Connect(function()
-        gradient.Rotation = (gradient.Rotation + 3) % 360
-    end)
-
-    local textLabel = Instance.new("TextLabel")
-    textLabel.Size = UDim2.new(1, -10, 1, -10)
-    textLabel.Position = UDim2.new(0.5, 0, 0.5, 0)
-    textLabel.AnchorPoint = Vector2.new(0.5, 0.5)
-    textLabel.BackgroundTransparency = 1
-    textLabel.Text = "Welcome, Please do not use secondary scripts\nIf you have any questions, please feel free to ask the editor.\nTikTok: jazwan27"
-    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    textLabel.Font = Enum.Font.GothamBold
-    textLabel.TextSize = 12
-    textLabel.TextWrapped = true
-    textLabel.Parent = mainFrame
-    
-    task.delay(10, function()
-        if screenGui then
-            screenGui:Destroy()
-        end
-    end)
-end
-
-createWelcomeGUI()
-
-local EXTRA_SPEED = 15 
-local SAFE_DISTANCE = 25 
-
-local ladderParts = {}
-
-local function cacheLadders()
-    local map = workspace:WaitForChild("Map", 5)
-    if not map then return end
-    
-    for _, obj in pairs(map:GetDescendants()) do
-        if obj:IsA("BasePart") and obj.Name == "Smooth Block Model" then
-            table.insert(ladderParts, obj)
-        end
-    end
-end
-
-cacheLadders()
-
-local function isNearLadder(rootPart)
-    if #ladderParts == 0 then return false end
-    
-    for _, part in ipairs(ladderParts) do
-        local dist = (part.Position - rootPart.Position).Magnitude
-        if dist <= SAFE_DISTANCE then
-            return true 
-        end
-    end
-    return false
-end
-
-RunService.Heartbeat:Connect(function(deltaTime)
-    local character = player.Character
-    if not character then return end
-    
-    local humanoid = character:FindFirstChild("Humanoid")
-    local rootPart = character:FindFirstChild("HumanoidRootPart")
-    
-    if humanoid and rootPart and humanoid.Health > 0 then
-        if humanoid.MoveDirection.Magnitude > 0 then
-            if not isNearLadder(rootPart) then
-                local speedOffset = humanoid.MoveDirection * (EXTRA_SPEED * deltaTime)
-                rootPart.CFrame = rootPart.CFrame + speedOffset
+        local character = localPlayer.Character
+        if not character then return end
+        
+        local myHRP = character:FindFirstChild("HumanoidRootPart")
+        local myHumanoid = character:FindFirstChildOfClass("Humanoid")
+        
+        if not myHumanoid or myHumanoid.Health <= 0 or not myHRP then return end
+        
+        local targetChar = getNearestTarget()
+        if targetChar then
+            local targetHRP = targetChar:FindFirstChild("HumanoidRootPart")
+            if targetHRP then
+                local angle = os.clock() * orbitSpeed
+                local offsetX = math.cos(angle) * orbitRadius
+                local offsetZ = math.sin(angle) * orbitRadius
+                local targetPosition = targetHRP.Position + Vector3.new(offsetX, 0, offsetZ)
+                myHRP.CFrame = CFrame.new(targetPosition, targetHRP.Position)
             end
         end
-    end
-end)
-
-
-سكربت ال esp 👇👇👇👇👇👇👇👇👇👇👇👇👇
--- =====================================================================
--- Underground War 2.0 ESP - Dynamic Distance & Custom UI
--- =====================================================================
-
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local LocalPlayer = Players.LocalPlayer
-
-local SafeGui = (gethui and gethui()) or game:GetService("CoreGui")
-if not SafeGui then SafeGui = LocalPlayer:WaitForChild("PlayerGui") end
-
--- تم تثبيت الـ ESP ليعمل دائماً بدون الحاجة لزر تشغيل أو إغلاق
-getgenv().ESP_Enabled = true
-
-if SafeGui:FindFirstChild("JazwanESPGui") then SafeGui.JazwanESPGui:Destroy() end
-
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "JazwanESPGui"
-ScreenGui.Parent = SafeGui
-ScreenGui.IgnoreGuiInset = true
-
--- ==========================================
--- 1. الشعار الجديد (مع الحواف المتحركة باللونين الأسود والأبيض)
--- ==========================================
-local Watermark = Instance.new("Frame")
-Watermark.Name = "Watermark"
-Watermark.Parent = ScreenGui
-Watermark.Size = UDim2.new(0, 350, 0, 70)
-Watermark.Position = UDim2.new(0.5, -175, 0, 60) 
-Watermark.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-Watermark.BackgroundTransparency = 0
-Watermark.BorderSizePixel = 0
-
-local WatermarkCorner = Instance.new("UICorner", Watermark)
-WatermarkCorner.CornerRadius = UDim.new(0, 8)
-
-local WatermarkStroke = Instance.new("UIStroke", Watermark)
-WatermarkStroke.Thickness = 3
-WatermarkStroke.Color = Color3.fromRGB(255, 255, 255)
-
-local WatermarkGradient = Instance.new("UIGradient", WatermarkStroke)
-WatermarkGradient.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
-}
-
-local WatermarkText = Instance.new("TextLabel", Watermark)
-WatermarkText.Size = UDim2.new(1, -10, 1, -10)
-WatermarkText.Position = UDim2.new(0.5, 0, 0.5, 0)
-WatermarkText.AnchorPoint = Vector2.new(0.5, 0.5)
-WatermarkText.BackgroundTransparency = 1
-WatermarkText.Text = "Welcome, Please do not use secondary scripts\nIf you have any questions, please feel free to ask the editor.\nTikTok: jazwan27"
-WatermarkText.TextColor3 = Color3.fromRGB(255, 255, 255)
-WatermarkText.Font = Enum.Font.GothamBold
-WatermarkText.TextSize = 12
-WatermarkText.TextWrapped = true
-
--- إخفاء الشعار بعد 10 ثواني
-task.delay(10, function()
-    if Watermark then Watermark:Destroy() end
-end)
-
--- ==========================================
--- تأثير الحركة للشعار الجديد
--- ==========================================
-task.spawn(function()
-    while true do
-        if not ScreenGui.Parent then break end 
-        WatermarkGradient.Rotation = (WatermarkGradient.Rotation + 3) % 360
-        task.wait(0.03)
-    end
-end)
-
--- ==========================================
--- 2. إشعار أقرب لاعب (مكانه فوق زر القفز مع شريط أسود وأبيض)
--- ==========================================
-local NotifFrame = Instance.new("Frame")
-NotifFrame.Parent = ScreenGui
-NotifFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-NotifFrame.Position = UDim2.new(1, -185, 1, -80) 
-NotifFrame.Size = UDim2.new(0, 170, 0, 50)
-NotifFrame.Visible = false
-
-local NotifCorner = Instance.new("UICorner", NotifFrame)
-NotifCorner.CornerRadius = UDim.new(0, 8)
-
-local NotifStroke = Instance.new("UIStroke", NotifFrame)
-NotifStroke.Thickness = 2
-NotifStroke.Color = Color3.fromRGB(255, 255, 255)
-
-local NotifGradient = Instance.new("UIGradient", NotifStroke)
-NotifGradient.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
-}
-
--- حركة الشريط الأسود والأبيض لإشعار أقرب لاعب أيضاً
-task.spawn(function()
-    while true do
-        if not ScreenGui.Parent then break end 
-        NotifGradient.Rotation = (NotifGradient.Rotation + 3) % 360
-        task.wait(0.03)
-    end
-end)
-
-local PlayerIcon = Instance.new("ImageLabel", NotifFrame)
-PlayerIcon.Size = UDim2.new(0, 35, 0, 35)
-PlayerIcon.Position = UDim2.new(0.05, 0, 0.15, 0)
-PlayerIcon.BackgroundTransparency = 1
-
-local NameText = Instance.new("TextLabel", NotifFrame)
-NameText.Size = UDim2.new(0, 110, 0, 15)
-NameText.Position = UDim2.new(0.35, 0, 0.15, 0)
-NameText.TextColor3 = Color3.new(1, 1, 1)
-NameText.Font = Enum.Font.GothamBold
-NameText.TextSize = 12
-NameText.Text = "Player"
-NameText.BackgroundTransparency = 1
-NameText.TextXAlignment = Enum.TextXAlignment.Left
-
-local SubText = Instance.new("TextLabel", NotifFrame)
-SubText.Size = UDim2.new(0, 110, 0, 15)
-SubText.Position = UDim2.new(0.35, 0, 0.5, 0)
-SubText.TextColor3 = Color3.fromRGB(180, 180, 180)
-SubText.Font = Enum.Font.Gotham
-SubText.TextSize = 9
-SubText.Text = "[فكرة يوسف] - [closest player]"
-SubText.BackgroundTransparency = 1
-SubText.TextXAlignment = Enum.TextXAlignment.Left
-
--- ==========================================
--- 3. نظام الـ ESP (مدمج لمنع الاختفاء + شفافية ديناميكية)
--- ==========================================
-local ESP_Objects = {}
-
-local function createESP(player)
-    if player == LocalPlayer then return end
-    
-    -- الإضاءة للمسافات القريبة
-    local hl = Instance.new("Highlight")
-    hl.Name = player.Name .. "_HL"
-    hl.FillColor = Color3.fromRGB(255, 0, 0)
-    hl.OutlineColor = Color3.fromRGB(255, 255, 255)
-    hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop 
-    hl.Enabled = false
-    hl.Parent = SafeGui
-
-    -- الصندوق للمسافات البعيدة (لكي لا يختفي أبداً)
-    local box = Instance.new("BoxHandleAdornment")
-    box.Name = player.Name .. "_BOX"
-    box.Size = Vector3.new(4, 5.5, 2)
-    box.Color3 = Color3.fromRGB(255, 0, 0)
-    box.AlwaysOnTop = true
-    box.ZIndex = 10
-    box.Visible = false
-    box.Parent = SafeGui
-
-    ESP_Objects[player] = {Highlight = hl, Box = box}
+    end)
 end
 
-for _, p in ipairs(Players:GetPlayers()) do createESP(p) end
-Players.PlayerAdded:Connect(createESP)
-Players.PlayerRemoving:Connect(function(p)
-    if ESP_Objects[p] then 
-        ESP_Objects[p].Highlight:Destroy()
-        ESP_Objects[p].Box:Destroy()
-        ESP_Objects[p] = nil 
-    end
-end)
+createTeleportBehindControl(Tab2Frame, 10, 180)
 
-RunService.RenderStepped:Connect(function()
-    local nearest, dist = nil, math.huge
-    local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+-- ==========================================
+-- زر Aimbot وزر Stealing flag (بجانب بعضهما)
+-- ==========================================
+local function createAimbotAndStealButtons(parent, x, y)
+    -- زر Aimbot
+    local btnAimbot = Instance.new("TextButton", parent)
+    btnAimbot.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
+    btnAimbot.Position = UDim2.new(0, x, 0, y)
+    btnAimbot.Size = UDim2.new(0, 180, 0, 35)
+    btnAimbot.Font = Enum.Font.GothamBold
+    btnAimbot.Text = "Aimbot"
+    btnAimbot.TextColor3 = Color3.fromRGB(0, 0, 0)
+    btnAimbot.TextSize = 16
+    btnAimbot.ZIndex = 1
+    Instance.new("UICorner", btnAimbot).CornerRadius = UDim.new(0, 4)
 
-    for player, obj in pairs(ESP_Objects) do
-        local isEnemy = true
-        if LocalPlayer.Team and player.Team and LocalPlayer.Team == player.Team then
-            isEnemy = false
-        end
+    local IndicatorAimbot = Instance.new("ImageLabel", btnAimbot)  
+    IndicatorAimbot.BackgroundTransparency = 1  
+    IndicatorAimbot.Position = UDim2.new(0, 8, 0.5, -6)   
+    IndicatorAimbot.Size = UDim2.new(0, 12, 0, 12)  
+    IndicatorAimbot.Image = "rbxassetid://3926305904"   
+    IndicatorAimbot.ImageColor3 = Color3.fromRGB(255, 50, 50)   
+    IndicatorAimbot.ZIndex = 2  
+      
+    local toggledAimbot = false  
+    local aimbotConnection = nil
+    local aimbotGui = nil
 
-        if isEnemy and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
-            local enemyRoot = player.Character.HumanoidRootPart
-            local d = 0
+    btnAimbot.MouseButton1Click:Connect(function()  
+        safePlaySound()  
+        toggledAimbot = not toggledAimbot  
+        if toggledAimbot then 
+            IndicatorAimbot.ImageColor3 = Color3.fromRGB(50, 255, 50) 
             
-            if myRoot then
-                d = (myRoot.Position - enemyRoot.Position).Magnitude
-                if d < dist then 
-                    dist = d
-                    nearest = player 
+            local ReplicatedStorage = game:GetService("ReplicatedStorage")
+            local RemoteEvent = ReplicatedStorage.Events.Remote.ShotTarget
+            local SoundService = game:GetService("SoundService")
+            local workspace = game:GetService("Workspace")
+
+            local targetTeamName = "Red"  
+            local cooldown = 0  
+            local bulletSpeed = 49.5  
+            local minPredictionDistance = 0  
+            local maxPredictionDistance = 10  
+            local lastShotTime = 0  
+
+            local function getTargetTeam()
+                if localPlayer.Team then
+                    if localPlayer.Team.Name == "Red" then
+                        return "Blue"
+                    elseif localPlayer.Team.Name == "Blue" then
+                        return "Red"
+                    end
+                end
+                return targetTeamName
+            end
+
+            local function playAimbotSound(soundId, delay)
+                delay = delay or 0
+                local sound = Instance.new("Sound")
+                sound.SoundId = "rbxassetid://" .. soundId
+                sound.Parent = SoundService
+                sound:Play()
+                task.wait(delay)
+                pcall(function() sound:Destroy() end)
+            end
+
+            task.spawn(function()
+                if not toggledAimbot then return end
+                playAimbotSound(2865227271, 0.5)
+                task.wait(0.5)
+                if toggledAimbot then playAimbotSound(1676318332) end
+            end)
+
+            local function findClosestPlayer()
+                local players = Players:GetPlayers()
+                local closestPlayer = nil
+                local shortestDistance = math.huge
+                
+                local char = localPlayer.Character
+                if not char then return nil, math.huge end
+                local tool = char:FindFirstChildOfClass("Tool")
+                local head = char:FindFirstChild("Head")
+                
+                if tool and head then
+                    local camera = workspace.CurrentCamera
+                    local shooterPosition = head.CFrame.Position + (camera.CFrame.LookVector * 1.5)
+                    local currentTargetTeam = getTargetTeam()
+                    
+                    for _, plyr in ipairs(players) do
+                        if plyr ~= localPlayer and plyr.Team and plyr.Team.Name == currentTargetTeam and plyr.Character and plyr.Character:FindFirstChild("Humanoid") and plyr.Character.Humanoid.Health > 0 then
+                            local targetPosition = plyr.Character.HumanoidRootPart.Position
+                            
+                            local raycastParams = RaycastParams.new()
+                            raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+                            raycastParams.FilterDescendantsInstances = {char}
+                            local rayResult = workspace:Raycast(shooterPosition, targetPosition - shooterPosition, raycastParams)
+                            
+                            local isVisible = false
+                            if rayResult and rayResult.Instance:IsDescendantOf(plyr.Character) then
+                                isVisible = true
+                            elseif not rayResult then
+                                isVisible = true
+                            end
+                            
+                            if isVisible then
+                                local horizontalDistance = (Vector3.new(targetPosition.X, 0, targetPosition.Z) - Vector3.new(shooterPosition.X, 0, shooterPosition.Z)).magnitude
+                                local heightDifference = math.abs(targetPosition.Y - shooterPosition.Y)
+                                local totalDistance = (horizontalDistance^2 + heightDifference^2)^0.5
+                                
+                                if totalDistance < shortestDistance then
+                                    closestPlayer = plyr
+                                    shortestDistance = totalDistance
+                                end
+                            end
+                        end
+                    end
+                end
+                
+                return closestPlayer, shortestDistance
+            end
+
+            local function predictPosition(targetPosition, targetVelocity)
+                local char = localPlayer.Character
+                if not char then return targetPosition end
+                local head = char:FindFirstChild("Head")
+                local camera = workspace.CurrentCamera
+                
+                local shooterPosition = head and (head.CFrame.Position + (camera.CFrame.LookVector * 1.5)) or char.HumanoidRootPart.Position
+                local distanceToTarget = (targetPosition - shooterPosition).magnitude
+                
+                local predictionDistance = math.clamp(distanceToTarget, minPredictionDistance, maxPredictionDistance)
+                local timeToImpact = predictionDistance / bulletSpeed
+                
+                return targetPosition + targetVelocity * timeToImpact
+            end
+
+            local function fireRemoteEvent(targetPlayer)
+                if targetPlayer then
+                    local currentTime = os.time()
+                    if currentTime - lastShotTime >= cooldown then
+                        local targetPosition = targetPlayer.Character.HumanoidRootPart.Position
+                        local targetVelocity = targetPlayer.Character.HumanoidRootPart.Velocity
+                        local predictedPosition = predictPosition(targetPosition, targetVelocity)
+                        
+                        local args = {
+                            [1] = predictedPosition,
+                            [2] = "Sniper"
+                        }
+                        RemoteEvent:FireServer(unpack(args))
+                        
+                        local char = localPlayer.Character
+                        if char then
+                            local tool = char:FindFirstChildOfClass("Tool")
+                            if tool then
+                                tool:Activate()
+                            end
+                        end
+                        
+                        lastShotTime = currentTime
+                    end
                 end
             end
 
-            -- حساب الشفافية: قريب = 0.2 (واضح جداً)، بعيد = 0.8 (عميق وخفيف)
-            local dynamicTransparency = math.clamp(d / 400, 0.2, 0.8)
+            aimbotGui = Instance.new("ScreenGui")
+            local success, parentGui = pcall(function() return gethui() end)
+            aimbotGui.Parent = success and parentGui or localPlayer:WaitForChild("PlayerGui")
 
-            if d < 150 then
-                -- إذا كان قريباً، نستخدم الـ Highlight للوضوح
-                obj.Highlight.Adornee = player.Character
-                obj.Highlight.FillTransparency = dynamicTransparency
-                obj.Highlight.Enabled = true
-                obj.Box.Visible = false
-            else
-                -- إذا كان بعيداً جداً، نستخدم الـ Box لكي لا يختفي بسبب المحرك
-                obj.Box.Adornee = enemyRoot
-                obj.Box.Transparency = dynamicTransparency
-                obj.Box.Visible = true
-                obj.Highlight.Enabled = false
+            local clickSound = Instance.new("Sound")
+            clickSound.SoundId = "rbxassetid://6042053626"
+            clickSound.Volume = 0.6
+            clickSound.Parent = SoundService
+
+            local mainFrameNotice = Instance.new("Frame")
+            mainFrameNotice.Size = UDim2.new(0, 350, 0, 70) 
+            mainFrameNotice.Position = UDim2.new(0.5, 0, 0.15, 0) 
+            mainFrameNotice.AnchorPoint = Vector2.new(0.5, 0.5)
+            mainFrameNotice.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+            mainFrameNotice.BorderSizePixel = 0
+            mainFrameNotice.Parent = aimbotGui
+
+            local uiCornerNotice = Instance.new("UICorner")
+            uiCornerNotice.CornerRadius = UDim.new(0, 8)
+            uiCornerNotice.Parent = mainFrameNotice
+
+            local uiStrokeNotice = Instance.new("UIStroke")
+            uiStrokeNotice.Thickness = 3
+            uiStrokeNotice.Color = Color3.fromRGB(255, 255, 255)
+            uiStrokeNotice.Parent = mainFrameNotice
+
+            local gradientNotice = Instance.new("UIGradient")
+            gradientNotice.Color = ColorSequence.new{
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
+                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
+            }
+            gradientNotice.Parent = uiStrokeNotice
+
+            local rotConn = RunService.RenderStepped:Connect(function()
+                if gradientNotice and gradientNotice.Parent then
+                    gradientNotice.Rotation = (gradientNotice.Rotation + 3) % 360
+                end
+            end)
+
+            local textLabelNotice = Instance.new("TextLabel")
+            textLabelNotice.Size = UDim2.new(1, -10, 1, -10)
+            textLabelNotice.Position = UDim2.new(0.5, 0, 0.5, 0)
+            textLabelNotice.AnchorPoint = Vector2.new(0.5, 0.5)
+            textLabelNotice.BackgroundTransparency = 1
+            textLabelNotice.Text = "Welcome, Please do not use secondary scripts\nIf you have any questions, please feel free to ask the editor.\nTikTok: jazwan27"
+            textLabelNotice.TextColor3 = Color3.fromRGB(255, 255, 255)
+            textLabelNotice.Font = Enum.Font.GothamBold
+            textLabelNotice.TextSize = 12
+            textLabelNotice.TextWrapped = true
+            textLabelNotice.Parent = mainFrameNotice
+
+            task.delay(10, function()
+                if mainFrameNotice then
+                    mainFrameNotice:Destroy()
+                end
+            end)
+
+            local targetCatButton = Instance.new("ImageButton")
+            targetCatButton.Parent = aimbotGui
+            targetCatButton.Position = UDim2.new(1, -100, 0.5, -37) 
+            targetCatButton.Size = UDim2.new(0, 75, 0, 75) 
+            targetCatButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+            targetCatButton.Image = "rbxassetid://79800588917778" 
+            targetCatButton.Active = true 
+
+            local catCorner = Instance.new("UICorner")
+            catCorner.CornerRadius = UDim.new(1, 0)
+            catCorner.Parent = targetCatButton
+
+            local CatStroke = Instance.new("UIStroke")
+            CatStroke.Thickness = 3
+            CatStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+            CatStroke.Parent = targetCatButton
+
+            task.spawn(function()
+                local c = 0
+                while toggledAimbot do 
+                    c = c + 0.01 
+                    if CatStroke then CatStroke.Color = Color3.fromHSV(c % 1, 1, 1) end
+                    task.wait() 
+                end
+            end)
+
+            local draggingCat, dragInputCat, dragStartCat, startPosCat
+            targetCatButton.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    draggingCat = true
+                    dragStartCat = input.Position
+                    startPosCat = targetCatButton.Position
+                    
+                    input.Changed:Connect(function()
+                        if input.UserInputState == Enum.UserInputState.End then
+                            draggingCat = false
+                        end
+                    end)
+                end
+            end)
+
+            targetCatButton.InputChanged:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+                    dragInputCat = input
+                end
+            end)
+
+            local uisConn = UserInputService.InputChanged:Connect(function(input)
+                if input == dragInputCat and draggingCat then
+                    local delta = input.Position - dragStartCat
+                    targetCatButton.Position = UDim2.new(startPosCat.X.Scale, startPosCat.X.Offset + delta.X, startPosCat.Y.Scale, startPosCat.Y.Offset + delta.Y)
+                end
+            end)
+
+            local clickConn = targetCatButton.MouseButton1Click:Connect(function()
+                clickSound:Play() 
+                local target = findClosestPlayer()
+                
+                if not target then
+                    game:GetService("StarterGui"):SetCore("SendNotification", {
+                        Title = "System",
+                        Text = "No enemies found nearby!",
+                        Icon = "rbxassetid://79800588917778",
+                        Duration = 3
+                    })
+                end
+                
+                fireRemoteEvent(target)
+            end)
+
+            aimbotConnection = {
+                Disconnect = function()
+                    if rotConn then rotConn:Disconnect() end
+                    if uisConn then uisConn:Disconnect() end
+                    if clickConn then clickConn:Disconnect() end
+                    if aimbotGui then aimbotGui:Destroy() end
+                end
+            }
+
+        else 
+            IndicatorAimbot.ImageColor3 = Color3.fromRGB(255, 50, 50) 
+            
+            pcall(function()
+                if type(aimbotConnection) == "table" and aimbotConnection.Disconnect then
+                    aimbotConnection:Disconnect()
+                end
+            end)
+            aimbotConnection = nil
+        end  
+    end)  
+
+    -- زر Stealing flag (بجانب زر Aimbot)
+    local btnSteal = Instance.new("TextButton", parent)
+    btnSteal.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
+    btnSteal.Position = UDim2.new(0, x + 190, 0, y)
+    btnSteal.Size = UDim2.new(0, 185, 0, 35)
+    btnSteal.Font = Enum.Font.GothamBold
+    btnSteal.Text = "Stealing flag"
+    btnSteal.TextColor3 = Color3.fromRGB(0, 0, 0)
+    btnSteal.TextSize = 16
+    btnSteal.ZIndex = 1
+    Instance.new("UICorner", btnSteal).CornerRadius = UDim.new(0, 4)
+
+    local IndicatorSteal = Instance.new("ImageLabel", btnSteal)  
+    IndicatorSteal.BackgroundTransparency = 1  
+    IndicatorSteal.Position = UDim2.new(0, 8, 0.5, -6)   
+    IndicatorSteal.Size = UDim2.new(0, 12, 0, 12)  
+    IndicatorSteal.Image = "rbxassetid://3926305904"   
+    IndicatorSteal.ImageColor3 = Color3.fromRGB(255, 50, 50)   
+    IndicatorSteal.ZIndex = 2  
+
+    local toggledSteal = false
+
+    btnSteal.MouseButton1Click:Connect(function()
+        safePlaySound()
+        toggledSteal = not toggledSteal
+        if toggledSteal then
+            IndicatorSteal.ImageColor3 = Color3.fromRGB(50, 255, 50)
+            
+            local success, err = pcall(function()
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/jazwan/Science_theft_jazwan27/refs/heads/main/theft_science_jazwan27"))()
+            end)
+            if not success then
+                warn("Failed to load stealing flag script: " .. tostring(err))
             end
         else
-            obj.Highlight.Enabled = false
-            obj.Box.Visible = false
+            IndicatorSteal.ImageColor3 = Color3.fromRGB(255, 50, 50)
+        end
+    end)
+
+    return btnAimbot
+end
+
+createAimbotAndStealButtons(Tab2Frame, 10, 230)
+
+-- ==========================================
+-- زري الانتقال للبرجين (Blue & Red Tower Transfer) مع نظام الحماية (Debounce)
+-- ==========================================
+local function createTowerTransferButtons(parent, x, y)
+    local isTransferring = false
+
+    -- دالة دوال الطيران الموحدة للبرجين
+    local function getRoot()
+        return localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart")
+    end
+
+    local function slowFlyTo(targetCFrame, duration)
+        local rootPart = getRoot()
+        if not rootPart then return end
+        
+        local bv = rootPart:FindFirstChild("FlyBV")
+        if not bv then
+            bv = Instance.new("BodyVelocity")
+            bv.Name = "FlyBV"
+            bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+            bv.Velocity = Vector3.new(0, 0, 0)
+            bv.Parent = rootPart
+        end
+        
+        local targetPos = targetCFrame + Vector3.new(0, 3, 0)
+        local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
+        local tween = TweenService:Create(rootPart, tweenInfo, {CFrame = targetPos})
+        
+        tween:Play()
+        tween.Completed:Wait()
+    end
+
+    local function stopFlying()
+        local rootPart = getRoot()
+        if rootPart then
+            local bv = rootPart:FindFirstChild("FlyBV")
+            if bv then bv:Destroy() end
         end
     end
 
-    -- عرض إشعار أقرب لاعب
-    if nearest then
-        NotifFrame.Visible = true
-        NameText.Text = nearest.Name
-        pcall(function()
-            local content = Players:GetUserThumbnailAsync(nearest.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150)
-            PlayerIcon.Image = content
+    -- زر الأزرق (Blue Tower Transfer)
+    local btnBlue = Instance.new("TextButton", parent)
+    btnBlue.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
+    btnBlue.Position = UDim2.new(0, x, 0, y)
+    btnBlue.Size = UDim2.new(0, 180, 0, 35)
+    btnBlue.Font = Enum.Font.GothamBold
+    btnBlue.Text = "Blue Tower"
+    btnBlue.TextColor3 = Color3.fromRGB(0, 0, 0)
+    btnBlue.TextSize = 14
+    btnBlue.ZIndex = 1
+    Instance.new("UICorner", btnBlue).CornerRadius = UDim.new(0, 4)
+
+    local IndicatorBlue = Instance.new("ImageLabel", btnBlue)  
+    IndicatorBlue.BackgroundTransparency = 1  
+    IndicatorBlue.Position = UDim2.new(0, 8, 0.5, -6)   
+    IndicatorBlue.Size = UDim2.new(0, 12, 0, 12)  
+    IndicatorBlue.Image = "rbxassetid://3926305904"   
+    IndicatorBlue.ImageColor3 = Color3.fromRGB(255, 50, 50)   
+    IndicatorBlue.ZIndex = 2
+
+    -- زر الأحمر (Red Tower Transfer)
+    local btnRed = Instance.new("TextButton", parent)
+    btnRed.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
+    btnRed.Position = UDim2.new(0, x + 190, 0, y)
+    btnRed.Size = UDim2.new(0, 185, 0, 35)
+    btnRed.Font = Enum.Font.GothamBold
+    btnRed.Text = "Red Tower"
+    btnRed.TextColor3 = Color3.fromRGB(0, 0, 0)
+    btnRed.TextSize = 14
+    btnRed.ZIndex = 1
+    Instance.new("UICorner", btnRed).CornerRadius = UDim.new(0, 4)
+
+    local IndicatorRed = Instance.new("ImageLabel", btnRed)  
+    IndicatorRed.BackgroundTransparency = 1  
+    IndicatorRed.Position = UDim2.new(0, 8, 0.5, -6)   
+    IndicatorRed.Size = UDim2.new(0, 12, 0, 12)  
+    IndicatorRed.Image = "rbxassetid://3926305904"   
+    IndicatorRed.ImageColor3 = Color3.fromRGB(255, 50, 50)   
+    IndicatorRed.ZIndex = 2
+
+    -- تنفيذ الانتقال للبرج الأزرق
+    btnBlue.MouseButton1Click:Connect(function()
+        if isTransferring then return end
+        isTransferring = true
+        safePlaySound()
+
+        IndicatorBlue.ImageColor3 = Color3.fromRGB(50, 255, 50)
+        IndicatorRed.ImageColor3 = Color3.fromRGB(255, 50, 50)
+
+        showMadaWelcomeLogo()
+
+        task.spawn(function()
+            local rootPart = getRoot()
+            if rootPart then
+                local blackBlock = Workspace:FindFirstChild("SpawnLocation")
+                local map = Workspace:FindFirstChild("Map")
+                local blueTower = map and map:FindFirstChild("Blue") and map.Blue:FindFirstChild("Tower") and map.Blue.Tower:FindFirstChild("Part")
+                
+                local blueFolder = map and map:FindFirstChild("Blue")
+                local blueLadderModel = blueFolder and blueFolder:FindFirstChild("Hole") and blueFolder.Hole:FindFirstChild("Ladder")
+                local blueLadderPart = blueLadderModel and (blueLadderModel:FindFirstChild("Smooth Block Model") or blueLadderModel:FindFirstChildWhichIsA("BasePart"))
+
+                local myTeam = localPlayer.Team and localPlayer.Team.Name or ""
+                
+                if string.match(string.lower(myTeam), "blue") then
+                    if blueTower then
+                        slowFlyTo(blueTower.CFrame, 1.5)
+                    end
+                    stopFlying()
+                else
+                    if blackBlock then
+                        slowFlyTo(blackBlock.CFrame, 4)
+                        task.wait(5)
+                    end
+                    
+                    if blueLadderPart then
+                        local stepOffset = Vector3.new(0, -1, 2)
+                        local targetLadderCFrame = CFrame.new(blueLadderPart.Position + stepOffset)
+                        slowFlyTo(targetLadderCFrame, 6)
+                    end
+                    
+                    if blueTower then
+                        slowFlyTo(blueTower.CFrame, 5)
+                    end
+                    
+                    stopFlying()
+                end
+            end
+
+            -- إعادة تفعيل الأزرار بعد انتهاء الرحلة بالكامل
+            isTransferring = false
+            IndicatorBlue.ImageColor3 = Color3.fromRGB(255, 50, 50)
         end)
-    else
-        NotifFrame.Visible = false
+    end)
+
+    -- تنفيذ الانتقال للبرج الأحمر
+    btnRed.MouseButton1Click:Connect(function()
+        if isTransferring then return end
+        isTransferring = true
+        safePlaySound()
+
+        IndicatorRed.ImageColor3 = Color3.fromRGB(50, 255, 50)
+        IndicatorBlue.ImageColor3 = Color3.fromRGB(255, 50, 50)
+
+        showMadaWelcomeLogo()
+
+        task.spawn(function()
+            local rootPart = getRoot()
+            if rootPart then
+                local blackBlock = Workspace:FindFirstChild("SpawnLocation")
+                local redTower = Workspace:FindFirstChild("Map") and Workspace.Map:FindFirstChild("Red") and Workspace.Map.Red:FindFirstChild("Tower") and Workspace.Map.Red.Tower:FindFirstChild("Part")
+
+                local map = Workspace:FindFirstChild("Map")
+                local redFolder = map and map:FindFirstChild("Red")
+                local redLadderModel = redFolder and redFolder:FindFirstChild("Hole") and redFolder.Hole:FindFirstChild("Ladder")
+                
+                local point_RedLadderBottom = nil
+                local point_RedLadderTop = nil
+                
+                if redLadderModel then
+                    local redLadderPart = redLadderModel:FindFirstChild("Smooth Block Model") or redLadderModel:FindFirstChildWhichIsA("BasePart")
+                    if redLadderPart then
+                        local stepOffset = Vector3.new(0, -1, 2)
+                        point_RedLadderBottom = CFrame.new(redLadderPart.Position + stepOffset)
+                        
+                        local topY = -math.huge
+                        local topPart = nil
+                        for _, part in ipairs(redLadderModel:GetDescendants()) do
+                            if part:IsA("BasePart") and part.Position.Y > topY then
+                                topY = part.Position.Y
+                                topPart = part
+                            end
+                        end
+                        if topPart then
+                            point_RedLadderTop = CFrame.new(topPart.Position + Vector3.new(0, 1, 2))
+                        else
+                            point_RedLadderTop = redLadderModel:GetPivot()
+                        end
+                    end
+                end
+
+                local myTeam = localPlayer.Team and localPlayer.Team.Name or ""
+                
+                if string.match(string.lower(myTeam), "red") then
+                    if redTower then
+                        slowFlyTo(redTower.CFrame, 2)
+                    end
+                    stopFlying()
+                else
+                    if blackBlock then
+                        slowFlyTo(blackBlock.CFrame, 4)
+                        task.wait(5)
+                    end
+                    
+                    if point_RedLadderBottom then
+                        slowFlyTo(point_RedLadderBottom, 6)
+                        if point_RedLadderTop then
+                            slowFlyTo(point_RedLadderTop, 0.5)
+                        end
+                    end
+                    
+                    if redTower then
+                        slowFlyTo(redTower.CFrame, 5)
+                    end
+                    
+                    stopFlying()
+                end
+            end
+
+            -- إعادة تفعيل الأزرار بعد انتهاء الرحلة بالكامل
+            isTransferring = false
+            IndicatorRed.ImageColor3 = Color3.fromRGB(255, 50, 50)
+        end)
+    end)
+end
+
+createTowerTransferButtons(Tab2Frame, 10, 275)
+
+local tabNames = {
+    {text = "Main menu", frame = MainMenuFrame},
+    {text = "Underground war 2.0", frame = Tab2Frame},
+    {text = "Player", frame = PlayerFrame},
+    {text = "Improving quality", frame = Tab4Frame},
+    {text = "Settings", frame = Tab5Frame}
+}
+
+for i, tInfo in ipairs(tabNames) do
+    local tabBtn = Instance.new("TextButton", Sidebar)
+    tabBtn.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
+    tabBtn.BorderSizePixel = 0
+    tabBtn.Size = UDim2.new(0, 140, 0, 38)
+    tabBtn.Font = Enum.Font.GothamBold
+    tabBtn.Text = tInfo.text
+    tabBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
+    tabBtn.TextSize = 13
+    Instance.new("UICorner", tabBtn).CornerRadius = UDim.new(0, 4)
+
+    tabBtn.MouseButton1Click:Connect(function()  
+        safePlaySound()  
+        for _, otherInfo in ipairs(tabNames) do otherInfo.frame.Visible = false end  
+        tInfo.frame.Visible = true  
+    end)  
+    if i == 1 then tInfo.frame.Visible = true end
+end
+
+local dragging, dragInput, dragStart, startPos
+MainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+        input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
     end
 end)
+MainFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
+end)
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+task.spawn(function()
+    safePlaySound()
+    local duration = 8
+    local steps = 100
+    local waitTime = duration / steps
+
+    for i = 0, 100, 1 do  
+        if LoadingBarFill and LoadingPercent then  
+            LoadingBarFill.Size = UDim2.new(i / 100, 0, 1, 0)  
+            LoadingPercent.Text = i .. "%"  
+        end  
+        task.wait(waitTime)  
+    end  
+      
+    if LoadingGui then  
+        TweenService:Create(LoadingGui, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()  
+        for _, child in ipairs(LoadingGui:GetDescendants()) do  
+            if child:IsA("GuiObject") then TweenService:Create(child, TweenInfo.new(0.3), {Transparency = 1}):Play() end  
+        end  
+        task.wait(0.3)  
+        LoadingGui:Destroy()  
+    end  
+      
+    ToggleButtonContainer.Visible = true  
+    MainFrame.Visible = true  
+    MainFrame.Size = UDim2.new(0, 450, 0, 270)  
+    MainFrame.BackgroundTransparency = 1  
+    MainStroke.Transparency = 1  
+      
+    local openTween = TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {  
+        Size = UDim2.new(0, 560, 0, 340),  
+        BackgroundTransparency = 0  
+    })  
+    TweenService:Create(MainStroke, TweenInfo.new(0.3), {Transparency = 0}):Play()  
+    openTween:Play()
+end)
+
+local uiVisible = true
+local isAnimating = false
+local function ToggleUI()
+    if isAnimating then return end
+    isAnimating = true
+    safePlaySound()
+    if not uiVisible then
+        MainFrame.Visible = true
+        MainFrame.Size = UDim2.new(0, 450, 0, 270)
+        MainFrame.BackgroundTransparency = 1
+        MainStroke.Transparency = 1
+        local openTween = TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, 560, 0, 340),
+            BackgroundTransparency = 0
+        })
+        TweenService:Create(MainStroke, TweenInfo.new(0.3), {Transparency = 0}):Play()
+        openTween:Play()
+        openTween.Completed:Wait()
+        uiVisible = true
+    else
+        local closeTween = TweenService:Create(MainFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+            Size = UDim2.new(0, 450, 0, 270),
+            BackgroundTransparency = 1
+        })
+        TweenService:Create(MainStroke, TweenInfo.new(0.2), {Transparency = 1}):Play()
+        closeTween:Play()
+        closeTween.Completed:Wait()
+        MainFrame.Visible = false
+        uiVisible = false
+    end
+    isAnimating = false
+end
+
+local clickTime = 0
+ToggleButtonContainer.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then clickTime = tick() end
+end)
+ToggleButtonContainer.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        if tick() - clickTime < 0.25 then ToggleUI() end
+    end
+end)
+
+UserInputService.InputBegan:Connect(function(input, processed)
+    if not processed and input.KeyCode == Enum.KeyCode.B then ToggleUI() end
+end)
+
+print("Part 5 Loaded: Tower Transfer Buttons with Debounce Added Successfully!")
