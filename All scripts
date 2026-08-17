@@ -10,6 +10,7 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 local localPlayer = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
 
 if CoreGui:FindFirstChild("VR7MercyScript") then
     CoreGui.VR7MercyScript:Destroy()
@@ -128,29 +129,6 @@ ToggleCatImage.ScaleType = Enum.ScaleType.Crop
 ToggleCatImage.ZIndex = 51
 Instance.new("UICorner", ToggleCatImage).CornerRadius = UDim.new(1, 0)
 
-local circleDragging, circleDragInput, circleDragStart, circleStartPos
-ToggleButtonContainer.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        circleDragging = true
-        circleDragStart = input.Position
-        circleStartPos = ToggleButtonContainer.Position
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then circleDragging = false end
-        end)
-    end
-end)
-ToggleButtonContainer.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        circleDragInput = input
-    end
-end)
-UserInputService.InputChanged:Connect(function(input)
-    if input == circleDragInput and circleDragging then
-        local delta = input.Position - circleDragStart
-        ToggleButtonContainer.Position = UDim2.new(circleStartPos.X.Scale, circleStartPos.X.Offset + delta.X, circleStartPos.Y.Scale, circleStartPos.Y.Offset + delta.Y)
-    end
-end)
-
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
@@ -169,6 +147,51 @@ MainStroke.Color = Color3.fromRGB(0, 0, 0)
 MainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 MainStroke.Transparency = 1
 TweenService:Create(MainStroke, strokeTweenInfo, {Color = Color3.fromRGB(255, 255, 255)}):Play()
+
+-- نظام منع خروج عناصر الواجهة عن الشاشة
+local function applyClamping(guiObject)
+    local dragging, dragInput, dragStart, startPos
+    guiObject.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = guiObject.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
+            end)
+        end
+    end)
+    guiObject.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            local viewport = Camera.ViewportSize
+            local objSize = guiObject.AbsoluteSize
+            
+            local newX = startPos.X.Offset + delta.X
+            local newY = startPos.Y.Offset + delta.Y
+            
+            -- حساب الحدود بناءً على حجم الشاشة
+            local minX = 0 - (guiObject.AnchorPoint.X * objSize.X)
+            local maxX = viewport.X - ((1 - guiObject.AnchorPoint.X) * objSize.X)
+            local minY = 0 - (guiObject.AnchorPoint.Y * objSize.Y)
+            local maxY = viewport.Y - ((1 - guiObject.AnchorPoint.Y) * objSize.Y)
+            
+            -- تطبيق القيود (Clamp)
+            local clampedX = math.clamp(startPos.X.Scale * viewport.X + newX, minX, maxX) - (startPos.X.Scale * viewport.X)
+            local clampedY = math.clamp(startPos.Y.Scale * viewport.Y + newY, minY, maxY) - (startPos.Y.Scale * viewport.Y)
+            
+            guiObject.Position = UDim2.new(startPos.X.Scale, clampedX, startPos.Y.Scale, clampedY)
+        end
+    end)
+end
+
+applyClamping(ToggleButtonContainer)
+applyClamping(MainFrame)
 
 local TopBar = Instance.new("Frame", MainFrame)
 TopBar.Name = "TopBar"
@@ -522,7 +545,10 @@ local function showMadaWelcomeLogo()
     task.delay(10, function() if welcomeGui then welcomeGui:Destroy() end end)
 end
 
--- بناء زر السيف مع صندوق عازل
+-- نظام التحكم الموحد بقفل الأزرار الثلاثة (Global Shared Lock)
+local isGlobalActionLocked = false
+
+-- بناء زر السيف مع صندوق عازل ونظام الحماية
 local function createReachControl(parent, x, y)
     local attackRange = 18
     local MAX_RANGE = 40
@@ -617,6 +643,7 @@ local function createReachControl(parent, x, y)
     end)  
 
     btn.MouseButton1Click:Connect(function()  
+        if isGlobalActionLocked then return end
         safePlaySound()  
         isReachActive = not isReachActive  
         Indicator.ImageColor3 = isReachActive and Color3.fromRGB(50, 255, 50) or Color3.fromRGB(255, 50, 50)  
@@ -887,7 +914,6 @@ createTeleportBehindControl(Tab2Frame, 10, 180)
 -- زر Aimbot وزر Stealing flag (بجانب بعضهما)
 -- ==========================================
 local function createAimbotAndStealButtons(parent, x, y)
-    -- زر Aimbot
     local btnAimbot = Instance.new("TextButton", parent)
     btnAimbot.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
     btnAimbot.Position = UDim2.new(0, x, 0, y)
@@ -1196,7 +1222,6 @@ local function createAimbotAndStealButtons(parent, x, y)
         end  
     end)  
 
-    -- زر Stealing flag (بجانب زر Aimbot)
     local btnSteal = Instance.new("TextButton", parent)
     btnSteal.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
     btnSteal.Position = UDim2.new(0, x + 190, 0, y)
@@ -1241,12 +1266,9 @@ end
 createAimbotAndStealButtons(Tab2Frame, 10, 230)
 
 -- ==========================================
--- زري الانتقال للبرجين (Blue & Red Tower Transfer) مع نظام الحماية (Debounce)
+-- زري الانتقال للبرجين (Blue & Red Tower Transfer) مع قفل الأزرار الثلاثة
 -- ==========================================
 local function createTowerTransferButtons(parent, x, y)
-    local isTransferring = false
-
-    -- دالة دوال الطيران الموحدة للبرجين
     local function getRoot()
         return localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart")
     end
@@ -1280,7 +1302,6 @@ local function createTowerTransferButtons(parent, x, y)
         end
     end
 
-    -- زر الأزرق (Blue Tower Transfer)
     local btnBlue = Instance.new("TextButton", parent)
     btnBlue.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
     btnBlue.Position = UDim2.new(0, x, 0, y)
@@ -1300,7 +1321,6 @@ local function createTowerTransferButtons(parent, x, y)
     IndicatorBlue.ImageColor3 = Color3.fromRGB(255, 50, 50)   
     IndicatorBlue.ZIndex = 2
 
-    -- زر الأحمر (Red Tower Transfer)
     local btnRed = Instance.new("TextButton", parent)
     btnRed.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
     btnRed.Position = UDim2.new(0, x + 190, 0, y)
@@ -1320,10 +1340,10 @@ local function createTowerTransferButtons(parent, x, y)
     IndicatorRed.ImageColor3 = Color3.fromRGB(255, 50, 50)   
     IndicatorRed.ZIndex = 2
 
-    -- تنفيذ الانتقال للبرج الأزرق
+    -- زر البرج الأزرق
     btnBlue.MouseButton1Click:Connect(function()
-        if isTransferring then return end
-        isTransferring = true
+        if isGlobalActionLocked then return end
+        isGlobalActionLocked = true
         safePlaySound()
 
         IndicatorBlue.ImageColor3 = Color3.fromRGB(50, 255, 50)
@@ -1369,16 +1389,15 @@ local function createTowerTransferButtons(parent, x, y)
                 end
             end
 
-            -- إعادة تفعيل الأزرار بعد انتهاء الرحلة بالكامل
-            isTransferring = false
+            isGlobalActionLocked = false
             IndicatorBlue.ImageColor3 = Color3.fromRGB(255, 50, 50)
         end)
     end)
 
-    -- تنفيذ الانتقال للبرج الأحمر
+    -- زر البرج الأحمر
     btnRed.MouseButton1Click:Connect(function()
-        if isTransferring then return end
-        isTransferring = true
+        if isGlobalActionLocked then return end
+        isGlobalActionLocked = true
         safePlaySound()
 
         IndicatorRed.ImageColor3 = Color3.fromRGB(50, 255, 50)
@@ -1449,8 +1468,7 @@ local function createTowerTransferButtons(parent, x, y)
                 end
             end
 
-            -- إعادة تفعيل الأزرار بعد انتهاء الرحلة بالكامل
-            isTransferring = false
+            isGlobalActionLocked = false
             IndicatorRed.ImageColor3 = Color3.fromRGB(255, 50, 50)
         end)
     end)
@@ -1484,25 +1502,6 @@ for i, tInfo in ipairs(tabNames) do
     end)  
     if i == 1 then tInfo.frame.Visible = true end
 end
-
-local dragging, dragInput, dragStart, startPos
-MainFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = MainFrame.Position
-        input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
-    end
-end)
-MainFrame.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
-end)
-UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        local delta = input.Position - dragStart
-        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-end)
 
 task.spawn(function()
     safePlaySound()
@@ -1588,4 +1587,4 @@ UserInputService.InputBegan:Connect(function(input, processed)
     if not processed and input.KeyCode == Enum.KeyCode.B then ToggleUI() end
 end)
 
-print("Part 5 Loaded: Tower Transfer Buttons with Debounce Added Successfully!")
+print("Part 5 Loaded: Clamping and Shared Lock System Added Successfully!")
