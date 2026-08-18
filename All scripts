@@ -23,7 +23,7 @@ ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 local function playSound()
     local sound = Instance.new("Sound")
     sound.SoundId = "rbxassetid://18180833536"
-    sound.Volume = 1
+    sound.Volume = 5 -- تم رفع مستوى الصوت ليصبح عالي جداً وقوي
     sound.Parent = SoundService
     sound:Play()
     sound.Ended:Connect(function()
@@ -356,17 +356,43 @@ ReleaseNotesLabel.TextYAlignment = Enum.TextYAlignment.Top
 ReleaseNotesLabel.TextWrapped = true
 ReleaseNotesLabel.ZIndex = 1
 
+-- ==========================================
+-- التبويب الثالث (Player) - الأزرار الأربعة المُضافة
+-- ==========================================
 local PlayerFrame = CreateTabContent("Player")
 
-local function createMiscButton(text, x, y, width)
-    local btn = Instance.new("TextButton", PlayerFrame)
+local PlayerInfoBox = Instance.new("Frame", PlayerFrame)
+PlayerInfoBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+PlayerInfoBox.BorderSizePixel = 0
+PlayerInfoBox.Position = UDim2.new(0, 10, 0, 15)
+PlayerInfoBox.Size = UDim2.new(0, 375, 0, 75)
+PlayerInfoBox.ZIndex = 1
+Instance.new("UICorner", PlayerInfoBox).CornerRadius = UDim.new(0, 8)
+Instance.new("UIStroke", PlayerInfoBox).Color = Color3.fromRGB(150, 150, 150)
+
+local PlayerInfoLabel = Instance.new("TextLabel", PlayerInfoBox)
+PlayerInfoLabel.BackgroundTransparency = 1
+PlayerInfoLabel.Position = UDim2.new(0, 12, 0, 10)
+PlayerInfoLabel.Size = UDim2.new(1, -24, 1, -20)
+PlayerInfoLabel.Font = Enum.Font.GothamBold
+PlayerInfoLabel.Text = "These scripts were specifically designed for the Underground War 2.0 map, ensuring security and an undetected environment."
+PlayerInfoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+PlayerInfoLabel.TextSize = 12
+PlayerInfoLabel.TextXAlignment = Enum.TextXAlignment.Left
+PlayerInfoLabel.TextYAlignment = Enum.TextYAlignment.Top
+PlayerInfoLabel.TextWrapped = true
+PlayerInfoLabel.ZIndex = 1
+
+-- دالة إنشاء أزرار التبويب الثالث بنفس شكل وترتيب أزرار التبويب الثاني
+local function createScriptButton(parent, x, y, title, scriptUrl)
+    local btn = Instance.new("TextButton", parent)
     btn.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
     btn.Position = UDim2.new(0, x, 0, y)
-    btn.Size = UDim2.new(0, width, 0, 35)
+    btn.Size = UDim2.new(0, 180, 0, 35)
     btn.Font = Enum.Font.GothamBold
-    btn.Text = text
+    btn.Text = title
     btn.TextColor3 = Color3.fromRGB(0, 0, 0)
-    btn.TextSize = 16
+    btn.TextSize = 14
     btn.ZIndex = 1
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
 
@@ -377,45 +403,41 @@ local function createMiscButton(text, x, y, width)
     Indicator.Image = "rbxassetid://3926305904"   
     Indicator.ImageColor3 = Color3.fromRGB(255, 50, 50)   
     Indicator.ZIndex = 2  
-      
-    local toggled = false  
-    btn.MouseButton1Click:Connect(function()  
-        safePlaySound()  
-        toggled = not toggled  
-        if toggled then Indicator.ImageColor3 = Color3.fromRGB(50, 255, 50) else Indicator.ImageColor3 = Color3.fromRGB(255, 50, 50) end  
-    end)  
+
+    local toggled = false
+    btn.MouseButton1Click:Connect(function()
+        safePlaySound()
+        toggled = not toggled
+        Indicator.ImageColor3 = toggled and Color3.fromRGB(50, 255, 50) or Color3.fromRGB(255, 50, 50)
+        
+        task.spawn(function()
+            local success, err = pcall(function()
+                loadstring(game:HttpGet(scriptUrl))()
+            end)
+            if not success then warn("Error loading script:", err) end
+        end)
+    end)
     return btn
 end
 
-local yPos = 10
-createMiscButton("رفع الاضاءة", 10, yPos, 180)
-createMiscButton("ESP", 200, yPos, 180)
-yPos = yPos + 45
-createMiscButton("اوتو كليكر", 10, yPos, 180)
-createMiscButton("شادر", 200, yPos, 180)
-yPos = yPos + 45
-createMiscButton("صباح", 10, yPos, 180)
-createMiscButton("ليل", 200, yPos, 180)
-yPos = yPos + 45
-createMiscButton("ادمن IY", 10, yPos, 180)
-createMiscButton("تخفيف لاق", 200, yPos, 180)
-yPos = yPos + 45
-createMiscButton("إعادة الانضمام", 10, yPos, 180)
-createMiscButton("تغيير السيرفر", 200, yPos, 180)
-yPos = yPos + 45
-createMiscButton("سكربت الشات العام", 10, yPos, 370)
+-- إضافة الأزرار الأربعة بتنسيق 2x2 وتحت الصندوق تماماً
+-- الصف الأول: Speed (يسار) و ESP (يمين)
+createScriptButton(PlayerFrame, 10, 105, "Speed", "https://raw.githubusercontent.com/jazwan/Speed-/refs/heads/main/speed_jazwan27")
+createScriptButton(PlayerFrame, 200, 105, "esp", "https://raw.githubusercontent.com/jazwan/esp_jazwan2/refs/heads/main/esp")
+
+-- الصف الثاني: Noclip (تحت speed) و Xray (تحت esp)
+createScriptButton(PlayerFrame, 10, 150, "noclip", "https://raw.githubusercontent.com/jazwan/Noclip_jazwan27/refs/heads/main/Noclip_jazwan20.lua")
+createScriptButton(PlayerFrame, 200, 150, "xray", "https://raw.githubusercontent.com/jazwan/xray/refs/heads/main/xray_jazwan27")
 
 print("Part 4 Loaded")
 
 -- ==========================================
 -- القسم الخامس: التبويب الثاني (Underground War)
--- يحتوي على نظام القفل المشترك (Debounce) وشريط التمرير (ScrollingFrame)
 -- ==========================================
 local Tab2Frame = CreateTabContent("UndergroundWar")
 local Tab4Frame = CreateTabContent("ImprovingQuality")
 local Tab5Frame = CreateTabContent("Settings")
 
--- متغير القفل الشامل للسكربتات الثلاثة
 local isActionRunning = false
 
 local DynamicProfileContainer = Instance.new("Frame", Tab2Frame)
@@ -471,7 +493,6 @@ InfoLabel.TextYAlignment = Enum.TextYAlignment.Top
 InfoLabel.TextWrapped = true
 InfoLabel.ZIndex = 1
 
--- دالة الترحيب الموحدة
 local function showMadaWelcomeLogo()
     local welcomeGui = Instance.new("ScreenGui")
     welcomeGui.Name = "GhazwanWelcomeUI"
@@ -527,22 +548,16 @@ local function showMadaWelcomeLogo()
     task.delay(10, function() if welcomeGui then welcomeGui:Destroy() end end)
 end
 
--- ==========================================
--- شريط التمرير الجديد الخاص بالتبويب الثاني
--- ==========================================
 local ActionsScroll = Instance.new("ScrollingFrame", Tab2Frame)
 ActionsScroll.Name = "ActionsScroll"
 ActionsScroll.BackgroundTransparency = 1
 ActionsScroll.BorderSizePixel = 0
 ActionsScroll.Position = UDim2.new(0, 0, 0, 125)
 ActionsScroll.Size = UDim2.new(1, 0, 1, -125)
-ActionsScroll.CanvasSize = UDim2.new(0, 0, 0, 210) -- حجم مخصص لاحتواء الأزرار
+ActionsScroll.CanvasSize = UDim2.new(0, 0, 0, 210)
 ActionsScroll.ScrollBarThickness = 4
 ActionsScroll.ScrollBarImageColor3 = Color3.fromRGB(150, 150, 150)
 
--- ==========================================
--- دوال الطيران الموحدة (مأخوذة من أكوادك)
--- ==========================================
 local function getRoot()
     return localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart")
 end
@@ -583,10 +598,6 @@ local function stopFlying()
         if bv then bv:Destroy() end
     end
 end
-
--- ==========================================
--- بناء أزرار التحكم داخل الـ ScrollingFrame
--- ==========================================
 
 local function createReachControl(parent, x, y)
     local attackRange = 18
@@ -938,7 +949,7 @@ local function createTeleportBehindControl(parent, x, y)
 end
 
 -- ==========================================
--- دمج سكربت الأيم بوت الذي أرسلته (بالحرف الواحد) داخل بيئة معزولة
+-- تعريف الأيم بوت (بدون إظهار الشعار عند التشغيل)
 -- ==========================================
 local AimbotCatButton_UI = nil
 do
@@ -969,22 +980,6 @@ do
         return targetTeamName
     end
 
-    local function playSound(soundId, delay)
-        delay = delay or 0
-        local sound = Instance.new("Sound")
-        sound.SoundId = "rbxassetid://" .. soundId
-        sound.Parent = SoundService
-        sound:Play()
-        wait(delay)
-        sound:Destroy()
-    end
-
-    spawn(function()
-        playSound(2865227271, 0.5)
-        wait(0.5)
-        playSound(1676318332)
-    end)
-
     local function findClosestPlayer()
         local players = game.Players:GetPlayers()
         local closestPlayer = nil
@@ -996,7 +991,6 @@ do
         if tool and head then
             local camera = workspace.CurrentCamera
             local shooterPosition = head.CFrame.Position + (camera.CFrame.LookVector * 1.5)
-            
             local currentTargetTeam = getTargetTeam()
             
             for _, plyr in ipairs(players) do
@@ -1028,20 +1022,16 @@ do
                 end
             end
         end
-        
         return closestPlayer, shortestDistance
     end
 
     local function predictPosition(targetPosition, targetVelocity)
         local head = player.Character:FindFirstChild("Head")
         local camera = workspace.CurrentCamera
-        
         local shooterPosition = head and (head.CFrame.Position + (camera.CFrame.LookVector * 1.5)) or player.Character.HumanoidRootPart.Position
         local distanceToTarget = (targetPosition - shooterPosition).magnitude
-        
         local predictionDistance = math.clamp(distanceToTarget, minPredictionDistance, maxPredictionDistance)
         local timeToImpact = predictionDistance / bulletSpeed
-        
         return targetPosition + targetVelocity * timeToImpact
     end
 
@@ -1051,7 +1041,6 @@ do
             if currentTime - lastShotTime >= cooldown then
                 local targetPosition = targetPlayer.Character.HumanoidRootPart.Position
                 local targetVelocity = targetPlayer.Character.HumanoidRootPart.Velocity
-                
                 local predictedPosition = predictPosition(targetPosition, targetVelocity)
                 
                 local args = {
@@ -1064,7 +1053,6 @@ do
                 if tool then
                     tool:Activate()
                 end
-                
                 lastShotTime = currentTime
             end
         end
@@ -1076,59 +1064,12 @@ do
 
     local clickSound = Instance.new("Sound")
     clickSound.SoundId = "rbxassetid://6042053626"
-    clickSound.Volume = 0.6
+    clickSound.Volume = 1 -- تم رفع صوت النقر أيضاً
     clickSound.Parent = SoundService
 
-    local mainFrame = Instance.new("Frame")
-    mainFrame.Size = UDim2.new(0, 350, 0, 70) 
-    mainFrame.Position = UDim2.new(0.5, 0, 0.15, 0) 
-    mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-    mainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    mainFrame.BorderSizePixel = 0
-    mainFrame.Parent = gui
-
-    local uiCorner = Instance.new("UICorner")
-    uiCorner.CornerRadius = UDim.new(0, 8)
-    uiCorner.Parent = mainFrame
-
-    local uiStroke = Instance.new("UIStroke")
-    uiStroke.Thickness = 3
-    uiStroke.Color = Color3.fromRGB(255, 255, 255)
-    uiStroke.Parent = mainFrame
-
-    local gradient = Instance.new("UIGradient")
-    gradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
-    }
-    gradient.Parent = uiStroke
-
-    RunService.RenderStepped:Connect(function()
-        gradient.Rotation = (gradient.Rotation + 3) % 360
-    end)
-
-    local textLabel = Instance.new("TextLabel")
-    textLabel.Size = UDim2.new(1, -10, 1, -10)
-    textLabel.Position = UDim2.new(0.5, 0, 0.5, 0)
-    textLabel.AnchorPoint = Vector2.new(0.5, 0.5)
-    textLabel.BackgroundTransparency = 1
-    textLabel.Text = "Welcome, Please do not use secondary scripts\nIf you have any questions, please feel free to ask the editor.\nTikTok: jazwan27"
-    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    textLabel.Font = Enum.Font.GothamBold
-    textLabel.TextSize = 12
-    textLabel.TextWrapped = true
-    textLabel.Parent = mainFrame
-
-    task.delay(10, function()
-        if mainFrame then
-            mainFrame:Destroy()
-        end
-    end)
-
     local targetCatButton = Instance.new("ImageButton")
-    AimbotCatButton_UI = targetCatButton -- حفظه كمتغير عام للواجهة لكي تتحكم به
-    targetCatButton.Visible = false -- جعله مخفياً في البداية كما طلبت
+    AimbotCatButton_UI = targetCatButton 
+    targetCatButton.Visible = false 
     targetCatButton.Parent = gui
     targetCatButton.Position = UDim2.new(1, -100, 0.5, -37) 
     targetCatButton.Size = UDim2.new(0, 75, 0, 75) 
@@ -1153,21 +1094,14 @@ do
         end
     end)
 
-    local dragging
-    local dragInput
-    local dragStart
-    local startPos
-
+    local dragging, dragInput, dragStart, startPos
     targetCatButton.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             dragStart = input.Position
             startPos = targetCatButton.Position
-            
             input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
             end)
         end
     end)
@@ -1188,7 +1122,6 @@ do
     targetCatButton.MouseButton1Click:Connect(function()
         clickSound:Play() 
         local target = findClosestPlayer()
-        
         if not target then
             game:GetService("StarterGui"):SetCore("SendNotification", {
                 Title = "System",
@@ -1197,7 +1130,6 @@ do
                 Duration = 3
             })
         end
-        
         fireRemoteEvent(target)
     end)
 end
@@ -1223,7 +1155,6 @@ local function createAimbotButton(parent, x, y)
     Indicator.ZIndex = 2  
       
     local toggled = false  
-    
     btn.MouseButton1Click:Connect(function()  
         safePlaySound()  
         toggled = not toggled  
@@ -1231,6 +1162,7 @@ local function createAimbotButton(parent, x, y)
             Indicator.ImageColor3 = Color3.fromRGB(50, 255, 50) 
             if AimbotCatButton_UI then
                 AimbotCatButton_UI.Visible = true
+                showMadaWelcomeLogo() 
             end
         else 
             Indicator.ImageColor3 = Color3.fromRGB(255, 50, 50) 
@@ -1242,9 +1174,6 @@ local function createAimbotButton(parent, x, y)
     return btn
 end
 
--- ==========================================
--- الدالة المركزية لعمل أزرار القفل المشترك (Blue, Red, Flag)
--- ==========================================
 local function createLockingButton(parent, x, y, title, actionLogicFunc)
     local btn = Instance.new("TextButton", parent)
     btn.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
@@ -1267,7 +1196,6 @@ local function createLockingButton(parent, x, y, title, actionLogicFunc)
 
     btn.MouseButton1Click:Connect(function()
         safePlaySound()
-        -- التأكد من عدم وجود عملية قيد التنفيذ
         if isActionRunning then return end
         
         isActionRunning = true
@@ -1277,7 +1205,6 @@ local function createLockingButton(parent, x, y, title, actionLogicFunc)
         task.spawn(function()
             local success, err = pcall(actionLogicFunc)
             if not success then warn("Error:", err) end
-            -- بعد الانتهاء نلغي القفل
             isActionRunning = false
             Indicator.ImageColor3 = Color3.fromRGB(255, 50, 50)
         end)
@@ -1285,12 +1212,10 @@ local function createLockingButton(parent, x, y, title, actionLogicFunc)
     return btn
 end
 
--- إدراج الأزرار داخل شريط التمرير الجديد (ActionsScroll)
 createReachControl(ActionsScroll, 10, 0)
 createTeleportBehindControl(ActionsScroll, 10, 50)
 createAimbotButton(ActionsScroll, 10, 100)
 
--- دالة برج الأزرق
 createLockingButton(ActionsScroll, 200, 100, "Go to Blue Tower 🔵", function()
     local map = workspace:FindFirstChild("Map")  
     local blueTower = map and map:FindFirstChild("Blue") and map.Blue:FindFirstChild("Tower") and map.Blue.Tower:FindFirstChild("Part")  
@@ -1299,7 +1224,6 @@ createLockingButton(ActionsScroll, 200, 100, "Go to Blue Tower 🔵", function()
     local blueLadderPart = blueLadderModel and (blueLadderModel:FindFirstChild("Smooth Block Model") or blueLadderModel:FindFirstChildWhichIsA("BasePart"))  
 
     local myTeam = localPlayer.Team and localPlayer.Team.Name or ""  
-    
     if string.match(string.lower(myTeam), "blue") then  
         if blueTower then slowFlyTo(blueTower.CFrame, 1.5) end  
         stopFlying()  
@@ -1315,7 +1239,6 @@ createLockingButton(ActionsScroll, 200, 100, "Go to Blue Tower 🔵", function()
     end
 end)
 
--- دالة برج الأحمر
 createLockingButton(ActionsScroll, 10, 145, "Go to Red Tower 🔴", function()
     local map = workspace:FindFirstChild("Map")
     local redTower = map and map:FindFirstChild("Red") and map.Red:FindFirstChild("Tower") and map.Red.Tower:FindFirstChild("Part")  
@@ -1351,7 +1274,6 @@ createLockingButton(ActionsScroll, 10, 145, "Go to Red Tower 🔴", function()
     end
 end)
 
--- دالة العلم (Stealing Flag) مع واجهة المؤقت
 createLockingButton(ActionsScroll, 200, 145, "Stealing Flag 🚩", function()
     local character = localPlayer.Character
     if not character then return end
@@ -1361,7 +1283,7 @@ createLockingButton(ActionsScroll, 200, 145, "Stealing Flag 🚩", function()
 
     local map = workspace:FindFirstChild("Map")
     local spawnLocation = workspace:FindFirstChild("SpawnLocation")
-    if not (map and spawnLocation) then warn("Map or Spawn not found") return end
+    if not (map and spawnLocation) then return end
 
     local redFolder = map:FindFirstChild("Red")
     local blueFolder = map:FindFirstChild("Blue")
@@ -1488,10 +1410,6 @@ createLockingButton(ActionsScroll, 200, 145, "Stealing Flag 🚩", function()
     humanoid.PlatformStand = false
 end)
 
-
--- ==========================================
--- إكمال خصائص الواجهة (Tabs, Dragging, إلخ..)
--- ==========================================
 local tabNames = {
     {text = "Main menu", frame = MainMenuFrame},
     {text = "Underground war 2.0", frame = Tab2Frame},
@@ -1622,4 +1540,4 @@ UserInputService.InputBegan:Connect(function(input, processed)
     if not processed and input.KeyCode == Enum.KeyCode.B then ToggleUI() end
 end)
 
-print("Part 5 Loaded: Mutex System & Action Buttons Successfully Integrated!")
+print("Part 5 Loaded Successfully!")
