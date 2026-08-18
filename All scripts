@@ -217,19 +217,14 @@ ContainerHolder.Size = UDim2.new(0, 395, 0, 285)
 print("Part 3 Loaded")
 
 -- ==========================================
--- القسم الرابع: محتويات القوائم (تم إضافة السحب التلقائي هنا)
+-- القسم الرابع: محتويات القوائم
 -- ==========================================
 local function CreateTabContent(name)
-    local tabFrame = Instance.new("ScrollingFrame", ContainerHolder)
+    local tabFrame = Instance.new("Frame", ContainerHolder)
     tabFrame.Name = name .. "Frame"
     tabFrame.BackgroundTransparency = 1
     tabFrame.BorderSizePixel = 0
     tabFrame.Size = UDim2.new(1, 0, 1, 0)
-    -- تفعيل السحب التلقائي ديناميكياً
-    tabFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-    tabFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
-    tabFrame.ScrollBarThickness = 2
-    tabFrame.ScrollingDirection = Enum.ScrollingDirection.Y
     tabFrame.Visible = false
 
     local BgImage = Instance.new("ImageLabel", tabFrame)  
@@ -413,39 +408,17 @@ createMiscButton("سكربت الشات العام", 10, yPos, 370)
 print("Part 4 Loaded")
 
 -- ==========================================
--- نظام الحماية المتقدم (Metatable State Lock)
--- يضمن عدم تشغيل أكثر من وظيفة في نفس الوقت (سرقة علم، ابراج)
--- ==========================================
-local TaskVault = setmetatable({_locked = false}, {
-    __call = function(self, func)
-        if self._locked then return false end
-        self._locked = true
-        task.spawn(function()
-            pcall(func)
-            self._locked = false
-        end)
-        return true
-    end
-})
-
--- ==========================================
 -- القسم الخامس: التبويب الثاني (Underground War)
+-- يحتوي على نظام القفل المشترك (Debounce) وشريط التمرير (ScrollingFrame)
 -- ==========================================
 local Tab2Frame = CreateTabContent("UndergroundWar")
 local Tab4Frame = CreateTabContent("ImprovingQuality")
 local Tab5Frame = CreateTabContent("Settings")
 
--- (أضفنا padding ديناميكي أسفل الصفحة لتجنب قص الأزرار السفلية)
-local UIListLayoutTab2 = Instance.new("UIListLayout", Tab2Frame)
-UIListLayoutTab2.SortOrder = Enum.SortOrder.LayoutOrder
-UIListLayoutTab2.Padding = UDim.new(0, 10)
+-- متغير القفل الشامل للسكربتات الثلاثة
+local isActionRunning = false
 
--- حاوية وهمية لتثبيت العناصر الأولى بالأعلى بدلاً من الـ ListLayout المطلق
-local WrapperTab2 = Instance.new("Frame", Tab2Frame)
-WrapperTab2.BackgroundTransparency = 1
-WrapperTab2.Size = UDim2.new(1, 0, 0, 320) -- المساحة الأساسية للعناصر
-
-local DynamicProfileContainer = Instance.new("Frame", WrapperTab2)
+local DynamicProfileContainer = Instance.new("Frame", Tab2Frame)
 DynamicProfileContainer.Name = "DynamicProfileContainer"
 DynamicProfileContainer.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 DynamicProfileContainer.Position = UDim2.new(0, 10, 0, 10)
@@ -485,7 +458,7 @@ task.spawn(function()
     end
 end)
 
-local InfoLabel = Instance.new("TextLabel", WrapperTab2)
+local InfoLabel = Instance.new("TextLabel", Tab2Frame)
 InfoLabel.BackgroundTransparency = 1
 InfoLabel.Position = UDim2.new(0, 130, 0, 10)
 InfoLabel.Size = UDim2.new(0, 250, 0, 110)
@@ -498,6 +471,7 @@ InfoLabel.TextYAlignment = Enum.TextYAlignment.Top
 InfoLabel.TextWrapped = true
 InfoLabel.ZIndex = 1
 
+-- دالة الترحيب الموحدة
 local function showMadaWelcomeLogo()
     local welcomeGui = Instance.new("ScreenGui")
     welcomeGui.Name = "GhazwanWelcomeUI"
@@ -553,9 +527,68 @@ local function showMadaWelcomeLogo()
     task.delay(10, function() if welcomeGui then welcomeGui:Destroy() end end)
 end
 
--- بناء زر السيف مع صندوق عازل
+-- ==========================================
+-- شريط التمرير الجديد الخاص بالتبويب الثاني
+-- ==========================================
+local ActionsScroll = Instance.new("ScrollingFrame", Tab2Frame)
+ActionsScroll.Name = "ActionsScroll"
+ActionsScroll.BackgroundTransparency = 1
+ActionsScroll.BorderSizePixel = 0
+ActionsScroll.Position = UDim2.new(0, 0, 0, 125)
+ActionsScroll.Size = UDim2.new(1, 0, 1, -125)
+ActionsScroll.CanvasSize = UDim2.new(0, 0, 0, 210) -- حجم مخصص لاحتواء الأزرار
+ActionsScroll.ScrollBarThickness = 4
+ActionsScroll.ScrollBarImageColor3 = Color3.fromRGB(150, 150, 150)
+
+-- ==========================================
+-- دوال الطيران الموحدة (مأخوذة من أكوادك)
+-- ==========================================
+local function getRoot()
+    return localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart")
+end
+
+local function slowFlyTo(targetCFrame, duration)
+    local rootPart = getRoot()
+    if not rootPart then return end
+    local bv = rootPart:FindFirstChild("FlyBV")  
+    if not bv then  
+        bv = Instance.new("BodyVelocity")  
+        bv.Name = "FlyBV"  
+        bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)  
+        bv.Velocity = Vector3.new(0, 0, 0)  
+        bv.Parent = rootPart  
+    end  
+    local targetPos = targetCFrame + Vector3.new(0, 3, 0)  
+    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)  
+    local tween = TweenService:Create(rootPart, tweenInfo, {CFrame = targetPos})  
+    tween:Play()  
+    tween.Completed:Wait()
+end
+
+local function flyToDistanceBased(targetCFrame, speed)
+    local rootPart = getRoot()
+    if not rootPart then return end
+    local distance = (rootPart.Position - targetCFrame.Position).Magnitude
+    local timeToTake = distance / speed
+    local tweenInfo = TweenInfo.new(timeToTake, Enum.EasingStyle.Linear)  
+    local tween = TweenService:Create(rootPart, tweenInfo, {CFrame = targetCFrame})  
+    tween:Play()  
+    tween.Completed:Wait()
+end
+
+local function stopFlying()
+    local rootPart = getRoot()
+    if rootPart then
+        local bv = rootPart:FindFirstChild("FlyBV")
+        if bv then bv:Destroy() end
+    end
+end
+
+-- ==========================================
+-- بناء أزرار التحكم داخل الـ ScrollingFrame
+-- ==========================================
+
 local function createReachControl(parent, x, y)
-    -- ... [باقي كود السيف كما هو في دالتك الأساسية] ...
     local attackRange = 18
     local MAX_RANGE = 40
     local MIN_RANGE = 1
@@ -728,13 +761,7 @@ local function createReachControl(parent, x, y)
     end)
 end
 
-createReachControl(WrapperTab2, 10, 130)
-
--- ==========================================
--- زر الانتقال خلف اللاعبين
--- ==========================================
 local function createTeleportBehindControl(parent, x, y)
-    -- ... [باقي الكود الخاص بالانتقال خلف اللاعبين كما هو] ...
     local orbitRadius = 5
     local orbitSpeed = 5
     local activationDistance = 15
@@ -841,10 +868,7 @@ local function createTeleportBehindControl(parent, x, y)
 
         local direction = targetPos - myPos
         local result = Workspace:Raycast(myPos, direction, raycastParams)
-
-        if result and result.Instance then
-            return true 
-        end
+        if result and result.Instance then return true end
         return false 
     end
 
@@ -891,7 +915,6 @@ local function createTeleportBehindControl(parent, x, y)
 
     RunService.RenderStepped:Connect(function()
         if not teleportToggled then return end
-        
         local character = localPlayer.Character
         if not character then return end
         
@@ -914,286 +937,560 @@ local function createTeleportBehindControl(parent, x, y)
     end)
 end
 
-createTeleportBehindControl(WrapperTab2, 10, 180)
-
 -- ==========================================
--- زر Aimbot وزر Stealing flag (مع ربط سرقة العلم بنظام الحماية)
+-- دمج سكربت الأيم بوت الذي أرسلته (بالحرف الواحد) داخل بيئة معزولة
 -- ==========================================
-local function createAimbotAndStealButtons(parent, x, y)
-    -- زر Aimbot
-    local btnAimbot = Instance.new("TextButton", parent)
-    btnAimbot.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-    btnAimbot.Position = UDim2.new(0, x, 0, y)
-    btnAimbot.Size = UDim2.new(0, 180, 0, 35)
-    btnAimbot.Font = Enum.Font.GothamBold
-    btnAimbot.Text = "Aimbot"
-    btnAimbot.TextColor3 = Color3.fromRGB(0, 0, 0)
-    btnAimbot.TextSize = 16
-    btnAimbot.ZIndex = 1
-    Instance.new("UICorner", btnAimbot).CornerRadius = UDim.new(0, 4)
+local AimbotCatButton_UI = nil
+do
+    local player = game.Players.LocalPlayer
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local RemoteEvent = ReplicatedStorage.Events.Remote.ShotTarget
+    local SoundService = game:GetService("SoundService")
+    local workspace = game:GetService("Workspace")
+    local UserInputService = game:GetService("UserInputService")
+    local RunService = game:GetService("RunService")
+    local CoreGui = game:GetService("CoreGui")
 
-    local IndicatorAimbot = Instance.new("ImageLabel", btnAimbot)  
-    IndicatorAimbot.BackgroundTransparency = 1  
-    IndicatorAimbot.Position = UDim2.new(0, 8, 0.5, -6)   
-    IndicatorAimbot.Size = UDim2.new(0, 12, 0, 12)  
-    IndicatorAimbot.Image = "rbxassetid://3926305904"   
-    IndicatorAimbot.ImageColor3 = Color3.fromRGB(255, 50, 50)   
-    IndicatorAimbot.ZIndex = 2  
+    local targetTeamName = "Red"  
+    local cooldown = 0  
+    local bulletSpeed = 49.5  
+    local minPredictionDistance = 0  
+    local maxPredictionDistance = 10  
+    local lastShotTime = 0  
+
+    local function getTargetTeam()
+        if player.Team then
+            if player.Team.Name == "Red" then
+                return "Blue"
+            elseif player.Team.Name == "Blue" then
+                return "Red"
+            end
+        end
+        return targetTeamName
+    end
+
+    local function playSound(soundId, delay)
+        delay = delay or 0
+        local sound = Instance.new("Sound")
+        sound.SoundId = "rbxassetid://" .. soundId
+        sound.Parent = SoundService
+        sound:Play()
+        wait(delay)
+        sound:Destroy()
+    end
+
+    spawn(function()
+        playSound(2865227271, 0.5)
+        wait(0.5)
+        playSound(1676318332)
+    end)
+
+    local function findClosestPlayer()
+        local players = game.Players:GetPlayers()
+        local closestPlayer = nil
+        local shortestDistance = math.huge
+        
+        local tool = player.Character:FindFirstChildOfClass("Tool")
+        local head = player.Character:FindFirstChild("Head")
+        
+        if tool and head then
+            local camera = workspace.CurrentCamera
+            local shooterPosition = head.CFrame.Position + (camera.CFrame.LookVector * 1.5)
+            
+            local currentTargetTeam = getTargetTeam()
+            
+            for _, plyr in ipairs(players) do
+                if plyr ~= player and plyr.Team and plyr.Team.Name == currentTargetTeam and plyr.Character and plyr.Character:FindFirstChild("Humanoid") and plyr.Character.Humanoid.Health > 0 then
+                    local targetPosition = plyr.Character.HumanoidRootPart.Position
+                    
+                    local raycastParams = RaycastParams.new()
+                    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+                    raycastParams.FilterDescendantsInstances = {player.Character}
+                    local rayResult = workspace:Raycast(shooterPosition, targetPosition - shooterPosition, raycastParams)
+                    
+                    local isVisible = false
+                    if rayResult and rayResult.Instance:IsDescendantOf(plyr.Character) then
+                        isVisible = true
+                    elseif not rayResult then
+                        isVisible = true
+                    end
+                    
+                    if isVisible then
+                        local horizontalDistance = (Vector3.new(targetPosition.X, 0, targetPosition.Z) - Vector3.new(shooterPosition.X, 0, shooterPosition.Z)).magnitude
+                        local heightDifference = math.abs(targetPosition.Y - shooterPosition.Y)
+                        local totalDistance = (horizontalDistance^2 + heightDifference^2)^0.5
+                        
+                        if totalDistance < shortestDistance then
+                            closestPlayer = plyr
+                            shortestDistance = totalDistance
+                        end
+                    end
+                end
+            end
+        end
+        
+        return closestPlayer, shortestDistance
+    end
+
+    local function predictPosition(targetPosition, targetVelocity)
+        local head = player.Character:FindFirstChild("Head")
+        local camera = workspace.CurrentCamera
+        
+        local shooterPosition = head and (head.CFrame.Position + (camera.CFrame.LookVector * 1.5)) or player.Character.HumanoidRootPart.Position
+        local distanceToTarget = (targetPosition - shooterPosition).magnitude
+        
+        local predictionDistance = math.clamp(distanceToTarget, minPredictionDistance, maxPredictionDistance)
+        local timeToImpact = predictionDistance / bulletSpeed
+        
+        return targetPosition + targetVelocity * timeToImpact
+    end
+
+    local function fireRemoteEvent(targetPlayer)
+        if targetPlayer then
+            local currentTime = os.time()
+            if currentTime - lastShotTime >= cooldown then
+                local targetPosition = targetPlayer.Character.HumanoidRootPart.Position
+                local targetVelocity = targetPlayer.Character.HumanoidRootPart.Velocity
+                
+                local predictedPosition = predictPosition(targetPosition, targetVelocity)
+                
+                local args = {
+                    [1] = predictedPosition,
+                    [2] = "Sniper"
+                }
+                RemoteEvent:FireServer(unpack(args))
+                
+                local tool = player.Character:FindFirstChildOfClass("Tool")
+                if tool then
+                    tool:Activate()
+                end
+                
+                lastShotTime = currentTime
+            end
+        end
+    end
+
+    local gui = Instance.new("ScreenGui")
+    local success, parent = pcall(function() return gethui() end)
+    gui.Parent = success and parent or player:WaitForChild("PlayerGui")
+
+    local clickSound = Instance.new("Sound")
+    clickSound.SoundId = "rbxassetid://6042053626"
+    clickSound.Volume = 0.6
+    clickSound.Parent = SoundService
+
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Size = UDim2.new(0, 350, 0, 70) 
+    mainFrame.Position = UDim2.new(0.5, 0, 0.15, 0) 
+    mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Parent = gui
+
+    local uiCorner = Instance.new("UICorner")
+    uiCorner.CornerRadius = UDim.new(0, 8)
+    uiCorner.Parent = mainFrame
+
+    local uiStroke = Instance.new("UIStroke")
+    uiStroke.Thickness = 3
+    uiStroke.Color = Color3.fromRGB(255, 255, 255)
+    uiStroke.Parent = mainFrame
+
+    local gradient = Instance.new("UIGradient")
+    gradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
+    }
+    gradient.Parent = uiStroke
+
+    RunService.RenderStepped:Connect(function()
+        gradient.Rotation = (gradient.Rotation + 3) % 360
+    end)
+
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, -10, 1, -10)
+    textLabel.Position = UDim2.new(0.5, 0, 0.5, 0)
+    textLabel.AnchorPoint = Vector2.new(0.5, 0.5)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = "Welcome, Please do not use secondary scripts\nIf you have any questions, please feel free to ask the editor.\nTikTok: jazwan27"
+    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.TextSize = 12
+    textLabel.TextWrapped = true
+    textLabel.Parent = mainFrame
+
+    task.delay(10, function()
+        if mainFrame then
+            mainFrame:Destroy()
+        end
+    end)
+
+    local targetCatButton = Instance.new("ImageButton")
+    AimbotCatButton_UI = targetCatButton -- حفظه كمتغير عام للواجهة لكي تتحكم به
+    targetCatButton.Visible = false -- جعله مخفياً في البداية كما طلبت
+    targetCatButton.Parent = gui
+    targetCatButton.Position = UDim2.new(1, -100, 0.5, -37) 
+    targetCatButton.Size = UDim2.new(0, 75, 0, 75) 
+    targetCatButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    targetCatButton.Image = "rbxassetid://79800588917778" 
+    targetCatButton.Active = true 
+
+    local catCorner = Instance.new("UICorner")
+    catCorner.CornerRadius = UDim.new(1, 0)
+    catCorner.Parent = targetCatButton
+
+    local CatStroke = Instance.new("UIStroke")
+    CatStroke.Thickness = 3
+    CatStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    CatStroke.Parent = targetCatButton
+
+    spawn(function()
+        local c = 0
+        while task.wait() do 
+            c = c + 0.01 
+            CatStroke.Color = Color3.fromHSV(c % 1, 1, 1) 
+        end
+    end)
+
+    local dragging
+    local dragInput
+    local dragStart
+    local startPos
+
+    targetCatButton.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = targetCatButton.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    targetCatButton.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            targetCatButton.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+
+    targetCatButton.MouseButton1Click:Connect(function()
+        clickSound:Play() 
+        local target = findClosestPlayer()
+        
+        if not target then
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "System",
+                Text = "No enemies found nearby!",
+                Icon = "rbxassetid://79800588917778",
+                Duration = 3
+            })
+        end
+        
+        fireRemoteEvent(target)
+    end)
+end
+
+local function createAimbotButton(parent, x, y)
+    local btn = Instance.new("TextButton", parent)
+    btn.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
+    btn.Position = UDim2.new(0, x, 0, y)
+    btn.Size = UDim2.new(0, 180, 0, 35)
+    btn.Font = Enum.Font.GothamBold
+    btn.Text = "Aimbot"
+    btn.TextColor3 = Color3.fromRGB(0, 0, 0)
+    btn.TextSize = 16
+    btn.ZIndex = 1
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+
+    local Indicator = Instance.new("ImageLabel", btn)  
+    Indicator.BackgroundTransparency = 1  
+    Indicator.Position = UDim2.new(0, 8, 0.5, -6)   
+    Indicator.Size = UDim2.new(0, 12, 0, 12)  
+    Indicator.Image = "rbxassetid://3926305904"   
+    Indicator.ImageColor3 = Color3.fromRGB(255, 50, 50)   
+    Indicator.ZIndex = 2  
       
-    local toggledAimbot = false  
-    local aimbotConnection = nil
-
-    btnAimbot.MouseButton1Click:Connect(function()  
+    local toggled = false  
+    
+    btn.MouseButton1Click:Connect(function()  
         safePlaySound()  
-        toggledAimbot = not toggledAimbot  
-        if toggledAimbot then 
-            IndicatorAimbot.ImageColor3 = Color3.fromRGB(50, 255, 50) 
-            -- (نفس كود الايم بوت الأساسي)
-            -- لتقليل طول الرسالة تم الإبقاء على الوظيفة كما أرسلتها بدون حذف
+        toggled = not toggled  
+        if toggled then 
+            Indicator.ImageColor3 = Color3.fromRGB(50, 255, 50) 
+            if AimbotCatButton_UI then
+                AimbotCatButton_UI.Visible = true
+            end
         else 
-            IndicatorAimbot.ImageColor3 = Color3.fromRGB(255, 50, 50) 
+            Indicator.ImageColor3 = Color3.fromRGB(255, 50, 50) 
+            if AimbotCatButton_UI then
+                AimbotCatButton_UI.Visible = false
+            end
         end  
     end)  
+    return btn
+end
 
-    -- زر Stealing flag (مرتبط بنظام الحماية TaskVault)
-    local btnSteal = Instance.new("TextButton", parent)
-    btnSteal.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-    btnSteal.Position = UDim2.new(0, x + 190, 0, y)
-    btnSteal.Size = UDim2.new(0, 185, 0, 35)
-    btnSteal.Font = Enum.Font.GothamBold
-    btnSteal.Text = "Stealing flag"
-    btnSteal.TextColor3 = Color3.fromRGB(0, 0, 0)
-    btnSteal.TextSize = 16
-    btnSteal.ZIndex = 1
-    Instance.new("UICorner", btnSteal).CornerRadius = UDim.new(0, 4)
+-- ==========================================
+-- الدالة المركزية لعمل أزرار القفل المشترك (Blue, Red, Flag)
+-- ==========================================
+local function createLockingButton(parent, x, y, title, actionLogicFunc)
+    local btn = Instance.new("TextButton", parent)
+    btn.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
+    btn.Position = UDim2.new(0, x, 0, y)
+    btn.Size = UDim2.new(0, 180, 0, 35)
+    btn.Font = Enum.Font.GothamBold
+    btn.Text = title
+    btn.TextColor3 = Color3.fromRGB(0, 0, 0)
+    btn.TextSize = 14
+    btn.ZIndex = 1
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
 
-    local IndicatorSteal = Instance.new("ImageLabel", btnSteal)  
-    IndicatorSteal.BackgroundTransparency = 1  
-    IndicatorSteal.Position = UDim2.new(0, 8, 0.5, -6)   
-    IndicatorSteal.Size = UDim2.new(0, 12, 0, 12)  
-    IndicatorSteal.Image = "rbxassetid://3926305904"   
-    IndicatorSteal.ImageColor3 = Color3.fromRGB(255, 50, 50)   
-    IndicatorSteal.ZIndex = 2  
+    local Indicator = Instance.new("ImageLabel", btn)  
+    Indicator.BackgroundTransparency = 1  
+    Indicator.Position = UDim2.new(0, 8, 0.5, -6)   
+    Indicator.Size = UDim2.new(0, 12, 0, 12)  
+    Indicator.Image = "rbxassetid://3926305904"   
+    Indicator.ImageColor3 = Color3.fromRGB(255, 50, 50)   
+    Indicator.ZIndex = 2  
 
-    local toggledSteal = false
-
-    btnSteal.MouseButton1Click:Connect(function()
-        if TaskVault._locked then return end -- يمنع التشغيل إذا كان هناك زر آخر يعمل
+    btn.MouseButton1Click:Connect(function()
         safePlaySound()
+        -- التأكد من عدم وجود عملية قيد التنفيذ
+        if isActionRunning then return end
         
-        toggledSteal = not toggledSteal
-        if toggledSteal then
-            IndicatorSteal.ImageColor3 = Color3.fromRGB(50, 255, 50)
-            
-            TaskVault(function()
-                local success, err = pcall(function()
-                    loadstring(game:HttpGet("https://raw.githubusercontent.com/jazwan/Science_theft_jazwan27/refs/heads/main/theft_science_jazwan27"))()
-                end)
-                if not success then warn("Failed to load stealing flag script: " .. tostring(err)) end
-                
-                -- إبقاء القفل مغلقاً لوقت معين حتى انتهاء سرقة العلم
-                task.wait(3.5) 
-                
-                toggledSteal = false
-                IndicatorSteal.ImageColor3 = Color3.fromRGB(255, 50, 50)
+        isActionRunning = true
+        Indicator.ImageColor3 = Color3.fromRGB(50, 255, 50)
+        showMadaWelcomeLogo()
+        
+        task.spawn(function()
+            local success, err = pcall(actionLogicFunc)
+            if not success then warn("Error:", err) end
+            -- بعد الانتهاء نلغي القفل
+            isActionRunning = false
+            Indicator.ImageColor3 = Color3.fromRGB(255, 50, 50)
+        end)
+    end)
+    return btn
+end
+
+-- إدراج الأزرار داخل شريط التمرير الجديد (ActionsScroll)
+createReachControl(ActionsScroll, 10, 0)
+createTeleportBehindControl(ActionsScroll, 10, 50)
+createAimbotButton(ActionsScroll, 10, 100)
+
+-- دالة برج الأزرق
+createLockingButton(ActionsScroll, 200, 100, "Go to Blue Tower 🔵", function()
+    local map = workspace:FindFirstChild("Map")  
+    local blueTower = map and map:FindFirstChild("Blue") and map.Blue:FindFirstChild("Tower") and map.Blue.Tower:FindFirstChild("Part")  
+    local blueFolder = map and map:FindFirstChild("Blue")  
+    local blueLadderModel = blueFolder and blueFolder:FindFirstChild("Hole") and blueFolder.Hole:FindFirstChild("Ladder")  
+    local blueLadderPart = blueLadderModel and (blueLadderModel:FindFirstChild("Smooth Block Model") or blueLadderModel:FindFirstChildWhichIsA("BasePart"))  
+
+    local myTeam = localPlayer.Team and localPlayer.Team.Name or ""  
+    
+    if string.match(string.lower(myTeam), "blue") then  
+        if blueTower then slowFlyTo(blueTower.CFrame, 1.5) end  
+        stopFlying()  
+    else  
+        local blackBlock = workspace:FindFirstChild("SpawnLocation")
+        if blackBlock then slowFlyTo(blackBlock.CFrame, 4); task.wait(5) end  
+        if blueLadderPart then  
+            local targetLadderCFrame = CFrame.new(blueLadderPart.Position + Vector3.new(0, -1, 2))  
+            slowFlyTo(targetLadderCFrame, 6)  
+        end  
+        if blueTower then slowFlyTo(blueTower.CFrame, 5) end  
+        stopFlying()  
+    end
+end)
+
+-- دالة برج الأحمر
+createLockingButton(ActionsScroll, 10, 145, "Go to Red Tower 🔴", function()
+    local map = workspace:FindFirstChild("Map")
+    local redTower = map and map:FindFirstChild("Red") and map.Red:FindFirstChild("Tower") and map.Red.Tower:FindFirstChild("Part")  
+    local redFolder = map and map:FindFirstChild("Red")  
+    local redLadderModel = redFolder and redFolder:FindFirstChild("Hole") and redFolder.Hole:FindFirstChild("Ladder")  
+    
+    local point_RedLadderBottom, point_RedLadderTop = nil, nil  
+    if redLadderModel then  
+        local redLadderPart = redLadderModel:FindFirstChild("Smooth Block Model") or redLadderModel:FindFirstChildWhichIsA("BasePart")  
+        if redLadderPart then  
+            point_RedLadderBottom = CFrame.new(redLadderPart.Position + Vector3.new(0, -1, 2))  
+            local topY = -math.huge; local topPart = nil  
+            for _, part in ipairs(redLadderModel:GetDescendants()) do  
+                if part:IsA("BasePart") and part.Position.Y > topY then topY = part.Position.Y; topPart = part end  
+            end  
+            if topPart then point_RedLadderTop = CFrame.new(topPart.Position + Vector3.new(0, 1, 2)) else point_RedLadderTop = redLadderModel:GetPivot() end  
+        end  
+    end  
+    
+    local myTeam = localPlayer.Team and localPlayer.Team.Name or ""  
+    if string.match(string.lower(myTeam), "red") then  
+        if redTower then slowFlyTo(redTower.CFrame, 2) end  
+        stopFlying()  
+    else  
+        local blackBlock = workspace:FindFirstChild("SpawnLocation")
+        if blackBlock then slowFlyTo(blackBlock.CFrame, 4); task.wait(5) end  
+        if point_RedLadderBottom then  
+            slowFlyTo(point_RedLadderBottom, 6)  
+            if point_RedLadderTop then slowFlyTo(point_RedLadderTop, 0.5) end  
+        end  
+        if redTower then slowFlyTo(redTower.CFrame, 5) end  
+        stopFlying()  
+    end
+end)
+
+-- دالة العلم (Stealing Flag) مع واجهة المؤقت
+createLockingButton(ActionsScroll, 200, 145, "Stealing Flag 🚩", function()
+    local character = localPlayer.Character
+    if not character then return end
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    local humanoid = character:FindFirstChild("Humanoid")
+    if not (rootPart and humanoid) then return end
+
+    local map = workspace:FindFirstChild("Map")
+    local spawnLocation = workspace:FindFirstChild("SpawnLocation")
+    if not (map and spawnLocation) then warn("Map or Spawn not found") return end
+
+    local redFolder = map:FindFirstChild("Red")
+    local blueFolder = map:FindFirstChild("Blue")
+    local redLadder = redFolder and redFolder:FindFirstChild("Hole") and redFolder.Hole:FindFirstChild("Ladder")
+    local blueLadder = blueFolder and blueFolder:FindFirstChild("Hole") and blueFolder.Hole:FindFirstChild("Ladder")
+
+    local isRedTeam = true
+    if localPlayer.Team then
+        if string.match(string.lower(localPlayer.Team.Name), "blue") then isRedTeam = false end
+    end
+
+    local myFolder = isRedTeam and redFolder or blueFolder
+    local enemyFolder = isRedTeam and blueFolder or redFolder
+    local myLadderModel = isRedTeam and redLadder or blueLadder
+    local enemyLadderModel = isRedTeam and blueLadder or redLadder
+
+    local function getFlag(folder)
+        local flag = folder and folder:FindFirstChild("Flag", true)
+        if flag then return flag:IsA("BasePart") and flag or flag:FindFirstChildWhichIsA("BasePart", true) end
+        return nil
+    end
+
+    local myFlagPart = getFlag(myFolder)
+    local enemyFlagPart = getFlag(enemyFolder)
+    if not (enemyFlagPart and myFlagPart) then return end
+
+    local function getTopLadder(ladderModel)
+        local topY = -math.huge
+        local topPart = nil
+        for _, part in ipairs(ladderModel:GetDescendants()) do
+            if part:IsA("BasePart") and part.Position.Y > topY then
+                topY = part.Position.Y; topPart = part
+            end
+        end
+        if topPart then return CFrame.new(topPart.Position + Vector3.new(0, 1, 2)) end
+        return ladderModel:GetPivot()
+    end
+
+    local myLadderPart = myLadderModel:FindFirstChild("Smooth Block Model") or myLadderModel:FindFirstChildWhichIsA("BasePart")
+    local enemyLadderPart = enemyLadderModel:FindFirstChild("Smooth Block Model") or enemyLadderModel:FindFirstChildWhichIsA("BasePart")
+    if not (myLadderPart and enemyLadderPart) then return end
+
+    local point_SpawnLoc = CFrame.new(spawnLocation.Position + Vector3.new(0, 3, 0))
+    local point_MyLadderBottom = CFrame.new(myLadderPart.Position + Vector3.new(0, -1, 2))
+    local point_MyLadderTop = getTopLadder(myLadderModel)
+    local point_MyFlag = CFrame.new(myFlagPart.Position)
+    local point_EnemyLadderBottom = CFrame.new(enemyLadderPart.Position + Vector3.new(0, -1, 2))
+    local point_EnemyLadderTop = getTopLadder(enemyLadderModel)
+    local point_EnemyFlag = CFrame.new(enemyFlagPart.Position)
+
+    local noclipConnection
+    local function startNoclip()
+        if not noclipConnection then
+            noclipConnection = RunService.Stepped:Connect(function()
+                for _, part in ipairs(character:GetDescendants()) do
+                    if part:IsA("BasePart") then part.CanCollide = false end
+                end
             end)
-        else
-            IndicatorSteal.ImageColor3 = Color3.fromRGB(255, 50, 50)
-        end
-    end)
-
-    return btnAimbot
-end
-
-createAimbotAndStealButtons(WrapperTab2, 10, 230)
-
--- ==========================================
--- زري الانتقال للبرجين (تم ربطهما بنظام الحماية TaskVault بدلاً من isTransferring)
--- ==========================================
-local function createTowerTransferButtons(parent, x, y)
-    local function getRoot()
-        return localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart")
-    end
-
-    local function slowFlyTo(targetCFrame, duration)
-        local rootPart = getRoot()
-        if not rootPart then return end
-        
-        local bv = rootPart:FindFirstChild("FlyBV")
-        if not bv then
-            bv = Instance.new("BodyVelocity")
-            bv.Name = "FlyBV"
-            bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-            bv.Velocity = Vector3.new(0, 0, 0)
-            bv.Parent = rootPart
-        end
-        
-        local targetPos = targetCFrame + Vector3.new(0, 3, 0)
-        local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
-        local tween = TweenService:Create(rootPart, tweenInfo, {CFrame = targetPos})
-        
-        tween:Play()
-        tween.Completed:Wait()
-    end
-
-    local function stopFlying()
-        local rootPart = getRoot()
-        if rootPart then
-            local bv = rootPart:FindFirstChild("FlyBV")
-            if bv then bv:Destroy() end
         end
     end
+    local function stopNoclip()
+        if noclipConnection then noclipConnection:Disconnect(); noclipConnection = nil end
+    end
 
-    local btnBlue = Instance.new("TextButton", parent)
-    btnBlue.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-    btnBlue.Position = UDim2.new(0, x, 0, y)
-    btnBlue.Size = UDim2.new(0, 180, 0, 35)
-    btnBlue.Font = Enum.Font.GothamBold
-    btnBlue.Text = "Blue Tower"
-    btnBlue.TextColor3 = Color3.fromRGB(0, 0, 0)
-    btnBlue.TextSize = 14
-    btnBlue.ZIndex = 1
-    Instance.new("UICorner", btnBlue).CornerRadius = UDim.new(0, 4)
+    local function showTimer(seconds)
+        local timerGui = Instance.new("ScreenGui", CoreGui)
+        local mainFrame = Instance.new("Frame", timerGui)
+        mainFrame.Size = UDim2.new(0, 450, 0, 60)
+        mainFrame.Position = UDim2.new(0.5, 0, 0.4, 0)
+        mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+        mainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 8)
+        local uiStroke = Instance.new("UIStroke", mainFrame)
+        uiStroke.Thickness = 3; uiStroke.Color = Color3.fromRGB(255, 255, 255)
+        
+        local textLabel = Instance.new("TextLabel", mainFrame)
+        textLabel.Size = UDim2.new(1, 0, 1, 0)
+        textLabel.BackgroundTransparency = 1
+        textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        textLabel.Font = Enum.Font.GothamBold; textLabel.TextSize = 14
+        textLabel.RichText = true
+        
+        for i = seconds, 1, -1 do
+            textLabel.Text = "Please wait for <font color='#FFD700'>" .. i .. "</font> seconds to get the best result"
+            task.wait(1)
+        end
+        timerGui:Destroy()
+    end
 
-    local IndicatorBlue = Instance.new("ImageLabel", btnBlue)  
-    IndicatorBlue.BackgroundTransparency = 1  
-    IndicatorBlue.Position = UDim2.new(0, 8, 0.5, -6)   
-    IndicatorBlue.Size = UDim2.new(0, 12, 0, 12)  
-    IndicatorBlue.Image = "rbxassetid://3926305904"   
-    IndicatorBlue.ImageColor3 = Color3.fromRGB(255, 50, 50)   
-    IndicatorBlue.ZIndex = 2
+    local antiGravity = Instance.new("BodyVelocity")  
+    antiGravity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)  
+    antiGravity.Velocity = Vector3.new(0, 0, 0)  
+    antiGravity.Parent = rootPart  
 
-    local btnRed = Instance.new("TextButton", parent)
-    btnRed.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-    btnRed.Position = UDim2.new(0, x + 190, 0, y)
-    btnRed.Size = UDim2.new(0, 185, 0, 35)
-    btnRed.Font = Enum.Font.GothamBold
-    btnRed.Text = "Red Tower"
-    btnRed.TextColor3 = Color3.fromRGB(0, 0, 0)
-    btnRed.TextSize = 14
-    btnRed.ZIndex = 1
-    Instance.new("UICorner", btnRed).CornerRadius = UDim.new(0, 4)
+    humanoid.PlatformStand = true
+    startNoclip()
 
-    local IndicatorRed = Instance.new("ImageLabel", btnRed)  
-    IndicatorRed.BackgroundTransparency = 1  
-    IndicatorRed.Position = UDim2.new(0, 8, 0.5, -6)   
-    IndicatorRed.Size = UDim2.new(0, 12, 0, 12)  
-    IndicatorRed.Image = "rbxassetid://3926305904"   
-    IndicatorRed.ImageColor3 = Color3.fromRGB(255, 50, 50)   
-    IndicatorRed.ZIndex = 2
+    flyToDistanceBased(point_MyLadderBottom, 25)
+    flyToDistanceBased(point_SpawnLoc, 25)
+    showTimer(5)
 
-    btnBlue.MouseButton1Click:Connect(function()
-        if TaskVault._locked then return end -- فحص نظام القفل الجديد
-        safePlaySound()
+    flyToDistanceBased(point_EnemyLadderBottom, 25); task.wait(1)
+    flyToDistanceBased(point_EnemyLadderTop, 25); task.wait(1)
+    flyToDistanceBased(point_EnemyFlag, 25)
 
-        IndicatorBlue.ImageColor3 = Color3.fromRGB(50, 255, 50)
-        IndicatorRed.ImageColor3 = Color3.fromRGB(255, 50, 50)
-        showMadaWelcomeLogo()
+    antiGravity.Parent = nil
+    humanoid.PlatformStand = false
+    stopNoclip()
+    task.wait(2)
 
-        TaskVault(function()
-            local rootPart = getRoot()
-            if rootPart then
-                local blackBlock = Workspace:FindFirstChild("SpawnLocation")
-                local map = Workspace:FindFirstChild("Map")
-                local blueTower = map and map:FindFirstChild("Blue") and map.Blue:FindFirstChild("Tower") and map.Blue.Tower:FindFirstChild("Part")
-                
-                local blueFolder = map and map:FindFirstChild("Blue")
-                local blueLadderModel = blueFolder and blueFolder:FindFirstChild("Hole") and blueFolder.Hole:FindFirstChild("Ladder")
-                local blueLadderPart = blueLadderModel and (blueLadderModel:FindFirstChild("Smooth Block Model") or blueLadderModel:FindFirstChildWhichIsA("BasePart"))
+    humanoid.PlatformStand = true
+    antiGravity.Parent = rootPart
+    startNoclip()
 
-                local myTeam = localPlayer.Team and localPlayer.Team.Name or ""
-                
-                if string.match(string.lower(myTeam), "blue") then
-                    if blueTower then slowFlyTo(blueTower.CFrame, 1.5) end
-                    stopFlying()
-                else
-                    if blackBlock then
-                        slowFlyTo(blackBlock.CFrame, 4)
-                        task.wait(5)
-                    end
-                    if blueLadderPart then
-                        local stepOffset = Vector3.new(0, -1, 2)
-                        local targetLadderCFrame = CFrame.new(blueLadderPart.Position + stepOffset)
-                        slowFlyTo(targetLadderCFrame, 6)
-                    end
-                    if blueTower then slowFlyTo(blueTower.CFrame, 5) end
-                    stopFlying()
-                end
-            end
-            IndicatorBlue.ImageColor3 = Color3.fromRGB(255, 50, 50)
-        end)
-    end)
+    flyToDistanceBased(point_SpawnLoc, 25)
+    showTimer(10)
 
-    btnRed.MouseButton1Click:Connect(function()
-        if TaskVault._locked then return end
-        safePlaySound()
+    flyToDistanceBased(point_MyLadderBottom, 25); task.wait(1)
+    flyToDistanceBased(point_MyLadderTop, 25); task.wait(1)
+    flyToDistanceBased(point_MyFlag, 25)
 
-        IndicatorRed.ImageColor3 = Color3.fromRGB(50, 255, 50)
-        IndicatorBlue.ImageColor3 = Color3.fromRGB(255, 50, 50)
-        showMadaWelcomeLogo()
+    stopNoclip()
+    antiGravity:Destroy()
+    humanoid.PlatformStand = false
+end)
 
-        TaskVault(function()
-            local rootPart = getRoot()
-            if rootPart then
-                local blackBlock = Workspace:FindFirstChild("SpawnLocation")
-                local redTower = Workspace:FindFirstChild("Map") and Workspace.Map:FindFirstChild("Red") and Workspace.Map.Red:FindFirstChild("Tower") and Workspace.Map.Red.Tower:FindFirstChild("Part")
-
-                local map = Workspace:FindFirstChild("Map")
-                local redFolder = map and map:FindFirstChild("Red")
-                local redLadderModel = redFolder and redFolder:FindFirstChild("Hole") and redFolder.Hole:FindFirstChild("Ladder")
-                
-                local point_RedLadderBottom = nil
-                local point_RedLadderTop = nil
-                
-                if redLadderModel then
-                    local redLadderPart = redLadderModel:FindFirstChild("Smooth Block Model") or redLadderModel:FindFirstChildWhichIsA("BasePart")
-                    if redLadderPart then
-                        local stepOffset = Vector3.new(0, -1, 2)
-                        point_RedLadderBottom = CFrame.new(redLadderPart.Position + stepOffset)
-                        
-                        local topY = -math.huge
-                        local topPart = nil
-                        for _, part in ipairs(redLadderModel:GetDescendants()) do
-                            if part:IsA("BasePart") and part.Position.Y > topY then
-                                topY = part.Position.Y
-                                topPart = part
-                            end
-                        end
-                        if topPart then
-                            point_RedLadderTop = CFrame.new(topPart.Position + Vector3.new(0, 1, 2))
-                        else
-                            point_RedLadderTop = redLadderModel:GetPivot()
-                        end
-                    end
-                end
-
-                local myTeam = localPlayer.Team and localPlayer.Team.Name or ""
-                
-                if string.match(string.lower(myTeam), "red") then
-                    if redTower then slowFlyTo(redTower.CFrame, 2) end
-                    stopFlying()
-                else
-                    if blackBlock then
-                        slowFlyTo(blackBlock.CFrame, 4)
-                        task.wait(5)
-                    end
-                    if point_RedLadderBottom then
-                        slowFlyTo(point_RedLadderBottom, 6)
-                        if point_RedLadderTop then slowFlyTo(point_RedLadderTop, 0.5) end
-                    end
-                    if redTower then slowFlyTo(redTower.CFrame, 5) end
-                    stopFlying()
-                end
-            end
-            IndicatorRed.ImageColor3 = Color3.fromRGB(255, 50, 50)
-        end)
-    end)
-end
-
-createTowerTransferButtons(WrapperTab2, 10, 275)
 
 -- ==========================================
--- باقي أجزاء السكربت من هنا فصاعداً (نظام القوائم والتمرير)
+-- إكمال خصائص الواجهة (Tabs, Dragging, إلخ..)
 -- ==========================================
 local tabNames = {
     {text = "Main menu", frame = MainMenuFrame},
@@ -1325,4 +1622,4 @@ UserInputService.InputBegan:Connect(function(input, processed)
     if not processed and input.KeyCode == Enum.KeyCode.B then ToggleUI() end
 end)
 
-print("Script Loaded Successfully!")
+print("Part 5 Loaded: Mutex System & Action Buttons Successfully Integrated!")
