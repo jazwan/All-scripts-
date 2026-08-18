@@ -357,7 +357,7 @@ ReleaseNotesLabel.TextWrapped = true
 ReleaseNotesLabel.ZIndex = 1
 
 -- ==========================================
--- التبويب الثالث (Player) - الأزرار الأربعة المُضافة
+-- التبويب الثالث (Player) - الأزرار وزر Server change المضاف حديثاً
 -- ==========================================
 local PlayerFrame = CreateTabContent("Player")
 
@@ -383,7 +383,6 @@ PlayerInfoLabel.TextYAlignment = Enum.TextYAlignment.Top
 PlayerInfoLabel.TextWrapped = true
 PlayerInfoLabel.ZIndex = 1
 
--- دالة إنشاء أزرار التبويب الثالث بنفس شكل وترتيب أزرار التبويب الثاني
 local function createScriptButton(parent, x, y, title, scriptUrl)
     local btn = Instance.new("TextButton", parent)
     btn.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
@@ -420,19 +419,59 @@ local function createScriptButton(parent, x, y, title, scriptUrl)
     return btn
 end
 
--- إضافة الأزرار الأربعة بتنسيق 2x2 وتحت الصندوق تماماً
--- الصف الأول: Speed (يسار) و ESP (يمين)
+-- الأزرار الأربعة السابقة (2x2)
 createScriptButton(PlayerFrame, 10, 105, "Speed", "https://raw.githubusercontent.com/jazwan/Speed-/refs/heads/main/speed_jazwan27")
 createScriptButton(PlayerFrame, 200, 105, "esp", "https://raw.githubusercontent.com/jazwan/esp_jazwan2/refs/heads/main/esp")
-
--- الصف الثاني: Noclip (تحت speed) و Xray (تحت esp)
 createScriptButton(PlayerFrame, 10, 150, "noclip", "https://raw.githubusercontent.com/jazwan/Noclip_jazwan27/refs/heads/main/Noclip_jazwan20.lua")
 createScriptButton(PlayerFrame, 200, 150, "xray", "https://raw.githubusercontent.com/jazwan/xray/refs/heads/main/xray_jazwan27")
+
+-- زر Server change الجديد بعرض الواجهة بالكامل وحواف متحركة
+do
+    local fullBtn = Instance.new("TextButton", PlayerFrame)
+    fullBtn.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
+    fullBtn.Position = UDim2.new(0, 10, 0, 195)
+    fullBtn.Size = UDim2.new(0, 375, 0, 35)
+    fullBtn.Font = Enum.Font.GothamBold
+    fullBtn.Text = "Server change"
+    fullBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
+    fullBtn.TextSize = 14
+    fullBtn.ZIndex = 1
+    Instance.new("UICorner", fullBtn).CornerRadius = UDim.new(0, 4)
+
+    -- إضافة الحدود المتحركة (أسود وأبيض)
+    local fullStroke = Instance.new("UIStroke", fullBtn)
+    fullStroke.Thickness = 2
+    fullStroke.Color = Color3.fromRGB(0, 0, 0)
+    fullStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    TweenService:Create(fullStroke, strokeTweenInfo, {Color = Color3.fromRGB(255, 255, 255)}):Play()
+
+    local Indicator = Instance.new("ImageLabel", fullBtn)  
+    Indicator.BackgroundTransparency = 1  
+    Indicator.Position = UDim2.new(0, 8, 0.5, -6)   
+    Indicator.Size = UDim2.new(0, 12, 0, 12)  
+    Indicator.Image = "rbxassetid://3926305904"   
+    Indicator.ImageColor3 = Color3.fromRGB(255, 50, 50)   
+    Indicator.ZIndex = 2  
+
+    local toggled = false
+    fullBtn.MouseButton1Click:Connect(function()
+        safePlaySound()
+        toggled = not toggled
+        Indicator.ImageColor3 = toggled and Color3.fromRGB(50, 255, 50) or Color3.fromRGB(255, 50, 50)
+        
+        task.spawn(function()
+            local success, err = pcall(function()
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/jazwan/Server-change-/refs/heads/main/Server%20change"))()
+            end)
+            if not success then warn("Error loading script:", err) end
+        end)
+    end)
+end
 
 print("Part 4 Loaded")
 
 -- ==========================================
--- القسم الخامس: التبويب الثاني (Underground War)
+-- القسم الخامس: التبويب الثاني (Underground War) وباقي الأقسام
 -- ==========================================
 local Tab2Frame = CreateTabContent("UndergroundWar")
 local Tab4Frame = CreateTabContent("ImprovingQuality")
@@ -948,9 +987,6 @@ local function createTeleportBehindControl(parent, x, y)
     end)
 end
 
--- ==========================================
--- تعريف الأيم بوت (بدون إظهار الشعار عند التشغيل)
--- ==========================================
 local AimbotCatButton_UI = nil
 do
     local player = game.Players.LocalPlayer
@@ -1064,7 +1100,7 @@ do
 
     local clickSound = Instance.new("Sound")
     clickSound.SoundId = "rbxassetid://6042053626"
-    clickSound.Volume = 1 -- تم رفع صوت النقر أيضاً
+    clickSound.Volume = 1
     clickSound.Parent = SoundService
 
     local targetCatButton = Instance.new("ImageButton")
