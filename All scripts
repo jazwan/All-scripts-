@@ -359,7 +359,7 @@ ReleaseNotesLabel.TextWrapped = true
 ReleaseNotesLabel.ZIndex = 1
 
 -- ==========================================
--- التبويب الثالث (Player)
+-- التبويب الثالث (Player) - الأزرار وزر Server change وزر Anti-AFK المضاف حديثاً
 -- ==========================================
 local PlayerFrame = CreateTabContent("Player")
 
@@ -421,11 +421,13 @@ local function createScriptButton(parent, x, y, title, scriptUrl)
     return btn
 end
 
+-- الأزرار الأربعة السابقة (2x2)
 createScriptButton(PlayerFrame, 10, 105, "Speed", "https://raw.githubusercontent.com/jazwan/Speed-/refs/heads/main/speed_jazwan27")
 createScriptButton(PlayerFrame, 200, 105, "esp", "https://raw.githubusercontent.com/jazwan/esp_jazwan2/refs/heads/main/esp")
 createScriptButton(PlayerFrame, 10, 150, "noclip", "https://raw.githubusercontent.com/jazwan/Noclip_jazwan27/refs/heads/main/Noclip_jazwan20.lua")
 createScriptButton(PlayerFrame, 200, 150, "xray", "https://raw.githubusercontent.com/jazwan/xray/refs/heads/main/xray_jazwan27")
 
+-- زر Server change الجديد بعرض الواجهة بالكامل وحواف متحركة
 do
     local fullBtn = Instance.new("TextButton", PlayerFrame)
     fullBtn.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
@@ -467,6 +469,7 @@ do
     end)
 end
 
+-- زر Anti-AFK الجديد تحت زر Server change ومفعل تلقائياً عند التشغيل
 do
     local afkBtn = Instance.new("TextButton", PlayerFrame)
     afkBtn.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
@@ -532,15 +535,18 @@ do
         toggleAntiAfk(not isAntiAfkActive)
     end)
 
+    -- تشغيل الـ Anti-AFK تلقائياً عند بدء التشغيل
     toggleAntiAfk(true)
 end
 
 print("Part 4 Loaded")
 
 -- ==========================================
--- القسم الخامس: التبويب الثاني (Underground War)
+-- القسم الخامس: التبويب الثاني (Underground War) وباقي الأقسام
 -- ==========================================
 local Tab2Frame = CreateTabContent("UndergroundWar")
+local Tab4Frame = CreateTabContent("ImprovingQuality")
+local Tab5Frame = CreateTabContent("Settings")
 
 local isActionRunning = false
 
@@ -1514,7 +1520,9 @@ end)
 local tabNames = {
     {text = "Main menu", frame = MainMenuFrame},
     {text = "Underground war 2.0", frame = Tab2Frame},
-    {text = "Player", frame = PlayerFrame}
+    {text = "Player", frame = PlayerFrame},
+    {text = "Improving quality", frame = Tab4Frame},
+    {text = "Settings", frame = Tab5Frame}
 }
 
 for i, tInfo in ipairs(tabNames) do
